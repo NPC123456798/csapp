@@ -191,7 +191,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -204,7 +204,9 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+   int hi = x >> 4;          // the high 2 bits must be value 3 
+  int lo = x & 0xF;         // get x's low 4 bits
+  return !(hi ^ 3) & !((lo + 6) >> 4);
 }
 /* 
  * conditional - same as x ? y : z 
