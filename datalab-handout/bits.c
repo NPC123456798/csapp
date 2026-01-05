@@ -216,7 +216,12 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int h = 0;
+  x = ~!x + 1; // if !x = 0, ~!x = 0xFFFFFFFF then + 1 still = 0 and if !x = 1, ~!x + 1 = 0xFFFFFFFF properly
+  h = ~x;
+  z = z & x;
+  y = h & y;
+  return y + z;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -226,7 +231,15 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  int sx = x >> 31; // >> is arithmetic right shift,it means if the sign is 1 then the right shift will cause 1 fill the empty bit then you will get -1 with >> 31
+  int sy = y >> 31;
+  int d = x + (~y + 1);
+  int sd = (d >> 31) & !(sx ^ sy); // same sin and get sign of x - y because the sign only believable when the sign same
+  int eq = !(x ^ y); // judge if equal
+  int h = ((sx ^ sy) & sx) & 1; // & 1 for the ASR, when the sign different and the x is negative must return 1
+  return h | sd | eq;
+
+
 }
 //4
 /* 
