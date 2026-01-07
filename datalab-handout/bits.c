@@ -251,7 +251,19 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  // int y = x >> 16;
+  // int z = 0;
+  // y = y | x;
+  // z = y >> 8;
+  // y = y | z;
+  // z = y >> 4;
+  // y = y | z;
+  // z = y >> 2;
+  // y = y | z;
+  // z = y >> 1;
+  // y = ((y | z) & 1) ^ 1;
+  // perfectly use the arithmetic shift right's feature and the thing that (x | -x)'s sign must be 1 except x is 0 then plus 1 can make -1 be 0 and 0 be 1
+  return ((x | (~x + 1)) >> 31) + 1; 
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
