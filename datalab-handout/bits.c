@@ -278,7 +278,39 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  int sg = !!(x >> 31); // the problem is how can i find the highest 1 bit's position
+  int negSg = ~sg + 1 ; // judge if negative
+  int y = ~x; // the most important step, if negative what you need is the highest 0 bit's position, so just negate it to make all 0 bits to 1 bits
+  int bit2 = 0x55;
+  int bit4 = 0x33;
+  int bit8 = 0x0F;
+  int bit16 = 0xFF; 
+  bit2 = bit2 + (bit2 << 8);
+  bit2 = bit2 + (bit2 << 16); // now bit2 is 0x55555555
+  bit4 = bit4 + (bit4 << 8);
+  bit4 = bit4 + (bit4 << 16); // now bit4 is 0x33333333
+  bit8 = bit8 + (bit8 << 8);
+  bit8 = bit8 + (bit8 << 16); // now bit8 is 0x0F0F0F0F
+  bit16 = bit16 + (bit16 << 16); // now bit16 is 0x00FF00FF
+  x = (negSg & y) | (~negSg & x); // if negative then use ~x + 1 else use x itself
+  x = x | (x >> 1);
+  x = x | (x >> 2);
+  x = x | (x >> 4);
+  x = x | (x >> 8);
+  x = x | (x >> 16); // now all bits lower than highest 1 bit are 1
+  // then count how many 1 bits are there
+  y = 0;
+  y = (x & bit2) + ((x >> 1) & bit2);
+
+  y = (y & bit4) + ((y >> 2) & bit4);
+
+  y = (y & bit8) + ((y >> 4) & bit8);
+
+  y = (y & bit16) + ((y >> 8) & bit16);
+
+  y = ((y & ((0xff << 8)| 0xFF)) + (y >> 16));
+  
+  return y + 1;
 }
 //float
 /* 
