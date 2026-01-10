@@ -325,7 +325,22 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  int exp = (uf >> 23) & 0xFF; // get exponent
+  int sign = uf & (1 << 31); // get sign bit
+  int getFrac = ((0x7F << 16) | ((0xFF << 8) | 0xFF));
+  int frac = uf & getFrac; // get fraction
+  if (exp == 0xFF) { // NaN or infinity
+    return uf;
+  }
+  if (exp == 0) { // denorminal
+    frac = (frac << 1) ;
+    return sign | frac;
+  }
+  exp = exp + 1;
+  if (exp == 0xFF) { // overflow to infinity
+    return sign | (0xFF << 23);
+  }
+  return sign | (exp << 23) | frac;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
