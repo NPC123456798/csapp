@@ -355,7 +355,34 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+  int exp = (uf >> 23) & 0xFF; // get exponent
+  int sign = uf & (1 << 31); // get sign bit
+  unsigned copy = uf;
+  int counter = 23;
+  int fracToInt = 0;
+  int bit = 0;
+  int overflow = 1 << 31;
+  if (exp > 157)
+  {
+    return overflow;
+  }
+  if (exp < 127)
+  {
+    return 0;
+  }
+  exp = exp - 127; // unbias the exponent
+  while (counter > 0) 
+  {
+    bit = copy & 1;
+    copy = copy >> 1;
+    if (exp  >= counter) {
+      fracToInt = fracToInt | (bit << (exp - counter));
+    }
+    counter = counter - 1;
+  }
+  fracToInt = fracToInt | (1 << (exp)); // add the implicit leading 1
+  fracToInt = sign ? -fracToInt : fracToInt;
+  return fracToInt;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -371,5 +398,20 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+  if (x < -149) {
+    return 0;
+  }
+
+  if (x < -126)
+  {
+    return 1 << (x + 149); // denorminal case must be handled specially because the exponent is all 0s ant the e is biased to -126 instead of e - 127 and the M is not 1.fraction but 0.fraction
+  }
+  
+
+  if (x > 127)
+  {
+    return (0xFF << 23);
+  }
+  
+  return (x + 127) << 23;
 }
