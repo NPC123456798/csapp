@@ -1,7 +1,10 @@
 
 farm.o:     file format elf64-x86-64
-000000000000001a ;movq %rax, %rdi
+0x00000000004019a2 ;movq %rax, %rdi
 000000000000005c ; popq %rax
+0x00000000004019d8 ; add $0x37, %al
+0x0000000000401a06 ; movq %rsp, %rax
+0x000000000040199e  ; nop
 Disassembly of section .text:
 
 0000000000000000 <start_farm>:
