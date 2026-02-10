@@ -1,7 +1,7 @@
 
 farm.o:     file format elf64-x86-64
-
-
+000000000000001a ;movq %rax, %rdi
+000000000000005c ; popq %rax
 Disassembly of section .text:
 
 0000000000000000 <start_farm>:
@@ -16,7 +16,7 @@ Disassembly of section .text:
 
 0000000000000014 <addval_273>:
   14:	f3 0f 1e fa          	endbr64
-  18:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax
+  18:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax  
   1e:	c3                   	ret
 
 000000000000001f <addval_219>:
