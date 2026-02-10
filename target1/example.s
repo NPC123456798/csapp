@@ -1,5 +1,5 @@
-movq $0x59b997fa, %rdi
+movq $0x6166373939623935, %rdi
 ret
-push $0x4017ec
+pushq %rdi
 
 
