@@ -7,7 +7,7 @@
 
 typedef struct cache_line{
     int valid;
-    uint64_t tag;
+    uint64_t tag; // tag is the high bits of the address after removing block offset and set index bits
     int lru_counter; // For LRU eviction policy
 } cache_line_t;
 
