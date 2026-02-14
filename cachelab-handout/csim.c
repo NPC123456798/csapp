@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct {
+typedef struct cache_line{
     int valid;
     uint64_t tag;
     int lru_counter; // For LRU eviction policy
@@ -27,14 +27,16 @@ typedef struct cache{
 
 
 
-
-
+void free_cache(cache* c);
 void printUsage(char* argv[]);
 void counter_LRU(cache* c);
 void handle_argument_error(char* argv[]);
+void set_cache(cache* c);
 
 int verbose = 0; // Global variable to track verbose flag
-
+int hits = 0;
+int misses = 0;
+int evictions = 0;
 
 
 
@@ -53,7 +55,6 @@ int main(int argc, char* argv[])
     FILE* trace_fp = NULL;
     int opt;
     cache* c = malloc(sizeof(cache));
-    
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) // Parse command-line arguments
     {
         switch (opt)
@@ -73,6 +74,7 @@ int main(int argc, char* argv[])
                 }
                 
                 c->set_index = atoi(optarg);
+                c->S = 1 << c->set_index; // Calculate number of sets
                 break;
             case 'E':
                 // Lines per set
@@ -105,7 +107,9 @@ int main(int argc, char* argv[])
                 break;
         }
     } 
-    // printSummary(0, 0, 0);
+    set_cache(c); // Initialize cache structure
+    // printSummary(hits, misses, evictions);
+    free_cache(c);
     return 0;
 }
 
@@ -139,4 +143,25 @@ void handle_argument_error(char* argv[]) {
     printf("Error: Missing required command line argument\n");
     printUsage(argv);
     exit(1);
+}
+
+void free_cache(cache* c) {
+    for (int i = 0; i < c->S; i++) {
+        free(c->sets[i].lines);
+    }
+    free(c->sets);
+    free(c);
+}
+
+
+void set_cache(cache* c) {
+    c->sets = malloc(c->S * sizeof(cache_set_t)); // Allocate memory for sets
+    for (int i = 0; i < c->S; i++) {
+        c->sets[i].lines = malloc(c->E * sizeof(cache_line_t)); // Allocate memory for lines in each set
+        for (int j = 0; j < c->E; j++) {
+            c->sets[i].lines[j].valid = 0;
+            c->sets[i].lines[j].tag = 0;
+            c->sets[i].lines[j].lru_counter = 0;
+        }
+    }
 }
