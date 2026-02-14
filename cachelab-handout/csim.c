@@ -57,7 +57,10 @@ int main(int argc, char* argv[])
     cache* c = malloc(sizeof(cache));
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) // Parse command-line arguments
     {
-        int argument = atoi(optarg); // Convert argument to integer for validation
+        int argument = 0;
+        if (optarg != NULL) {
+            argument = atoi(optarg); // Convert argument to integer
+        }
         switch (opt)
         {
             case 'h':
