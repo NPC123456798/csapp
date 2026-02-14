@@ -31,7 +31,7 @@ typedef struct cache{
 
 void printUsage(char* argv[]);
 void counter_LRU(cache* c);
-
+void handle_argument_error(char* argv[]);
 
 int verbose = 0; // Global variable to track verbose flag
 
@@ -52,40 +52,64 @@ int main(int argc, char* argv[])
 {
     FILE* trace_fp = NULL;
     int opt;
+    cache* c = malloc(sizeof(cache));
+    if (argc != 9) // 8 arguments + program name
+    {
+        handle_argument_error(argv);
+    }
+    
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) // Parse command-line arguments
     {
         switch (opt)
         {
-        case 'h':
-            printUsage(argv);
-            exit(0);
-        case 'v':
-            // Verbose flag
-            verbose = 1;
-            break;
-        case 's':
-            // Set index bits
-            break;
-        case 'E':
-            // Lines per set
-            break;
-        case 'b':
-            // Block offset bits
-            break;
-        case 't':
-            // Trace file
-            trace_fp = fopen(optarg, "r");
-            if (trace_fp == NULL) {
-                printf("Error opening trace file %s\n", optarg);
+            case 'h':
+                printUsage(argv);
+                exit(0);
+            case 'v':
+                // Verbose flag
+                verbose = 1;
+                break;
+            case 's':
+                // Set index bits
+                if (atoi(optarg) == 0)
+                {
+                    handle_argument_error(argv);
+                }
+                
+                c->set_index = atoi(optarg);
+                break;
+            case 'E':
+                // Lines per set
+                if (atoi(optarg) == 0)
+                {
+                    handle_argument_error(argv);
+                }
+                c->E = atoi(optarg);
+                break;
+            case 'b':
+                // Block offset bits
+                if (atoi(optarg) == 0)
+                {
+                    handle_argument_error(argv);
+                }
+                c->block_offset = atoi(optarg);
+                break;
+            case 't':
+                // Trace file
+                trace_fp = fopen(optarg, "r");
+                if (trace_fp == NULL) {
+                    printf("Error opening trace file %s\n", optarg);
+                    exit(1);
+                }
+                break;
+            case '?':        
+                printUsage(argv);
                 exit(1);
-            }
-            break;
-        
-        default:
-            break;
+            default:
+                break;
         }
     } 
-    printSummary(0, 0, 0);
+    // printSummary(0, 0, 0);
     return 0;
 }
 
@@ -113,4 +137,10 @@ void counter_LRU(cache* c) {
             }
         }
     }
+}
+
+void handle_argument_error(char* argv[]) {
+    printf("Error: Missing required command line argument\n");
+    printUsage(argv);
+    exit(1);
 }
