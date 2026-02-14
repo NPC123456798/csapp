@@ -36,7 +36,7 @@ void simulate_cache(cache* c, FILE* trace_fp);
 void load_cache(cache* c, uint64_t address, int size);
 void store_cache(cache* c, uint64_t address, int size);
 void modify_cache(cache* c, uint64_t address, int size);
-
+void access_cache(cache* c, uint64_t address, int size);
 
 int verbose = 0; // Global variable to track verbose flag
 int hits = 0;
@@ -117,7 +117,8 @@ int main(int argc, char* argv[])
         }
     } 
     set_cache(c); // Initialize cache structure
-    // printSummary(hits, misses, evictions);
+    simulate_cache(c, trace_fp); // Simulate cache accesses based on the trace file
+    printSummary(hits, misses, evictions);
     free_cache(c);
     fclose(trace_fp);
     return 0;
@@ -209,8 +210,39 @@ void load_cache(cache* c, uint64_t address, int size) {
     // Implement cache load logic here
     if (verbose == 1)
     {
-        printf("L %lx,%d ", address, size);
+        printf("L %lx,%d", address, size);
     }
+    access_cache(c, address, size);
+    printf("\n");
+
+
+    
+}
+
+
+void store_cache(cache* c, uint64_t address, int size) {
+    // Implement cache store logic here
+    if (verbose == 1)
+    {
+        printf("S %lx,%d", address, size);
+    }
+    access_cache(c, address, size);
+    printf("\n");
+}
+
+void modify_cache(cache* c, uint64_t address, int size) {
+    // Implement cache modify logic here
+    if (verbose == 1)
+    {
+        printf("M %lx,%d", address, size);
+    }
+    access_cache(c, address, size);
+    access_cache(c, address, size);
+    printf("\n");
+}
+
+
+void access_cache(cache* c, uint64_t address, int size) {
     counter_LRU(c); // Increment LRU counters for all valid lines before accessing the cache
     // ((1 << c->set_index) - 1) is used to create a mask for extracting the set index bits from the address. 
     //  like if set_index is 4, then (1 << 4) - 1 = 15 (0b1111), which allows us to extract the last 4 bits of the address for the set index.
@@ -223,6 +255,7 @@ void load_cache(cache* c, uint64_t address, int size) {
         if (lines[i].valid && lines[i].tag == tag)
         {
             lines[i].lru_counter = 0;
+            hits++;
             if (verbose == 1)
             {
                 printf(" hit");
@@ -237,6 +270,11 @@ void load_cache(cache* c, uint64_t address, int size) {
         if (lines[i].valid == 0)
         {
             evict_index = i;
+            if (verbose == 1)
+            {
+                printf(" miss");
+            }
+            misses++;
             break;
         }
         else if (lines[i].lru_counter > lines[evict_index].lru_counter)
@@ -245,23 +283,17 @@ void load_cache(cache* c, uint64_t address, int size) {
         }
     }
     // Evict the line with highest LRU counter
+    if (lines[evict_index].valid == 1)
+    {
+        evictions++;
+        misses++;
+        if (verbose == 1)
+        {
+            printf(" miss eviction");
+        }
+    }
+    
     lines[evict_index].valid = 1;
     lines[evict_index].tag = tag;
     lines[evict_index].lru_counter = 0;
-    if (verbose == 1)
-    {
-        printf(" miss");
-    }
-    
-
-    
-}
-
-
-void store_cache(cache* c, uint64_t address, int size) {
-    // Implement cache store logic here
-}
-
-void modify_cache(cache* c, uint64_t address, int size) {
-    // Implement cache modify logic here
 }
