@@ -33,9 +33,9 @@ void counter_LRU(cache* c);
 void handle_argument_error(char* argv[]);
 void set_cache(cache* c);
 void simulate_cache(cache* c, FILE* trace_fp);
-void load_cache(cache* c, uint64_t address);
-void store_cache(cache* c, uint64_t address);
-void modify_cache(cache* c, uint64_t address);
+void load_cache(cache* c, uint64_t address, int size);
+void store_cache(cache* c, uint64_t address, int size);
+void modify_cache(cache* c, uint64_t address, int size);
 
 
 int verbose = 0; // Global variable to track verbose flag
@@ -186,13 +186,15 @@ void simulate_cache(cache* c, FILE* trace_fp) {
         // Implement cache simulation logic here
         switch (operation)
         {
+            // Simulate cache access for load, store, and modify operations
             case 'L':
-
+                load_cache(c, address, size);
                 break;
             case 'S':
+                store_cache(c, address, size);
                 break;
             case 'M':
-                // Simulate cache access for load, store, and modify operations
+                modify_cache(c, address, size);
                 break;
             default:
                 break;
@@ -203,15 +205,63 @@ void simulate_cache(cache* c, FILE* trace_fp) {
 
 
 
-void load_cache(cache* c, uint64_t address) {
+void load_cache(cache* c, uint64_t address, int size) {
     // Implement cache load logic here
+    if (verbose == 1)
+    {
+        printf("L %lx,%d ", address, size);
+    }
+    counter_LRU(c); // Increment LRU counters for all valid lines before accessing the cache
+    // ((1 << c->set_index) - 1) is used to create a mask for extracting the set index bits from the address. 
+    //  like if set_index is 4, then (1 << 4) - 1 = 15 (0b1111), which allows us to extract the last 4 bits of the address for the set index.
+    uint64_t set_index = (address >> c->block_offset) & ((1 << c->set_index) - 1);
+    uint64_t tag = address >> (c->block_offset + c->set_index);
+    cache_set_t* set = &c->sets[set_index]; // use & to get the address of the set to modify it directly instead of a copy
+    cache_line_t* lines = set->lines;
+    for (size_t i = 0; i < c->E; i++)
+    {
+        if (lines[i].valid && lines[i].tag == tag)
+        {
+            lines[i].lru_counter = 0;
+            if (verbose == 1)
+            {
+                printf(" hit");
+            }
+            return;
+        }
+    }
+    // If not found, we need to evict a line and insert the new one
+    int evict_index = 0;
+    for (size_t i = 0; i < c->E; i++)
+    {
+        if (lines[i].valid == 0)
+        {
+            evict_index = i;
+            break;
+        }
+        else if (lines[i].lru_counter > lines[evict_index].lru_counter)
+        {
+            evict_index = i;
+        }
+    }
+    // Evict the line with highest LRU counter
+    lines[evict_index].valid = 1;
+    lines[evict_index].tag = tag;
+    lines[evict_index].lru_counter = 0;
+    if (verbose == 1)
+    {
+        printf(" miss");
+    }
+    
+
+    
 }
 
 
-void store_cache(cache* c, uint64_t address) {
+void store_cache(cache* c, uint64_t address, int size) {
     // Implement cache store logic here
 }
 
-void modify_cache(cache* c, uint64_t address) {
+void modify_cache(cache* c, uint64_t address, int size) {
     // Implement cache modify logic here
 }
