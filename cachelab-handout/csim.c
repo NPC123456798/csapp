@@ -5,14 +5,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void printUsage(char* argv[]);
-
-
-
-int verbose = 0; // Global variable to track verbose flag
-
-
 typedef struct {
+    int valid;
+    uint64_t tag;
+    int lru_counter; // For LRU eviction policy
+} cache_line_t;
+
+typedef struct cache_sets{
+    cache_line_t* lines;
+} cache_set_t;
+
+
+typedef struct cache{
     int set_index; // number of set index bits
     int E; // number of lines per set
     int block_offset; // number of block offset bits
@@ -21,15 +25,28 @@ typedef struct {
     cache_set_t* sets;
 } cache;
 
-typedef struct {
-    int valid;
-    uint64_t tag;
-    int lru_counter; // For LRU eviction policy
-} cache_line_t;
 
-typedef struct {
-    cache_line_t* lines;
-} cache_set_t;
+
+
+
+void printUsage(char* argv[]);
+void counter_LRU(cache* c);
+
+
+int verbose = 0; // Global variable to track verbose flag
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 int main(int argc, char* argv[])
 {
@@ -72,6 +89,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+/* print the help message */
 void printUsage(char* argv[]) {
     printf("Usage: %s [-hv] -s <num> -E <num> -b <num> -t <file>\n", argv[0]);
     printf("Options:\n");
@@ -84,4 +102,15 @@ void printUsage(char* argv[]) {
     printf("\nExamples:\n");
     printf("linux> %s -s 4 -E 1 -b 4 -t traces/yi.trace\n", argv[0]);
     printf("linux> %s -v -s 8 -E 2 -b 4 -t traces/yi.trace\n", argv[0]);
+}
+
+/* Increase LRU counter for all valid lines in cache */
+void counter_LRU(cache* c) {
+    for (int i = 0; i < c->S; i++) {
+        for (int j = 0; j < c->E; j++) {
+            if (c->sets[i].lines[j].valid) {
+                c->sets[i].lines[j].lru_counter++;
+            }
+        }
+    }
 }
