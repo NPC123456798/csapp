@@ -32,6 +32,11 @@ void printUsage(char* argv[]);
 void counter_LRU(cache* c);
 void handle_argument_error(char* argv[]);
 void set_cache(cache* c);
+void simulate_cache(cache* c, FILE* trace_fp);
+void load_cache(cache* c, uint64_t address);
+void store_cache(cache* c, uint64_t address);
+void modify_cache(cache* c, uint64_t address);
+
 
 int verbose = 0; // Global variable to track verbose flag
 int hits = 0;
@@ -169,4 +174,44 @@ void set_cache(cache* c) {
             c->sets[i].lines[j].lru_counter = 0;
         }
     }
+}
+
+
+void simulate_cache(cache* c, FILE* trace_fp) {
+    char operation;
+    uint64_t address;
+    int size;
+    while (fscanf(trace_fp, " %c %lx,%d", &operation, &address, &size) == 3) {
+        // Process the trace line and update hits, misses, evictions
+        // Implement cache simulation logic here
+        switch (operation)
+        {
+            case 'L':
+
+                break;
+            case 'S':
+                break;
+            case 'M':
+                // Simulate cache access for load, store, and modify operations
+                break;
+            default:
+                break;
+        }
+        
+    }
+}
+
+
+
+void load_cache(cache* c, uint64_t address) {
+    // Implement cache load logic here
+}
+
+
+void store_cache(cache* c, uint64_t address) {
+    // Implement cache store logic here
+}
+
+void modify_cache(cache* c, uint64_t address) {
+    // Implement cache modify logic here
 }
