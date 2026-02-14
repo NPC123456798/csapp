@@ -36,7 +36,7 @@ void set_cache(cache* c);
 int verbose = 0; // Global variable to track verbose flag
 int hits = 0;
 int misses = 0;
-int evictions = 0;
+int evictions = 0; // Global variable to track eviction count
 
 
 
@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
     cache* c = malloc(sizeof(cache));
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) // Parse command-line arguments
     {
+        int argument = atoi(optarg); // Convert argument to integer for validation
         switch (opt)
         {
             case 'h':
@@ -68,29 +69,29 @@ int main(int argc, char* argv[])
                 break;
             case 's':
                 // Set index bits
-                if (atoi(optarg) == 0)
+                if (argument == 0)
                 {
                     handle_argument_error(argv);
                 }
                 
-                c->set_index = atoi(optarg);
+                c->set_index = argument;
                 c->S = 1 << c->set_index; // Calculate number of sets
                 break;
             case 'E':
                 // Lines per set
-                if (atoi(optarg) == 0)
+                if (argument == 0)
                 {
                     handle_argument_error(argv);
                 }
-                c->E = atoi(optarg);
+                c->E = argument;
                 break;
             case 'b':
                 // Block offset bits
-                if (atoi(optarg) == 0)
+                if (argument == 0)
                 {
                     handle_argument_error(argv);
                 }
-                c->block_offset = atoi(optarg);
+                c->block_offset = argument;
                 break;
             case 't':
                 // Trace file
@@ -110,6 +111,7 @@ int main(int argc, char* argv[])
     set_cache(c); // Initialize cache structure
     // printSummary(hits, misses, evictions);
     free_cache(c);
+    fclose(trace_fp);
     return 0;
 }
 
