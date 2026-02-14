@@ -53,10 +53,6 @@ int main(int argc, char* argv[])
     FILE* trace_fp = NULL;
     int opt;
     cache* c = malloc(sizeof(cache));
-    if (argc != 9) // 8 arguments + program name
-    {
-        handle_argument_error(argv);
-    }
     
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) // Parse command-line arguments
     {
@@ -98,7 +94,7 @@ int main(int argc, char* argv[])
                 // Trace file
                 trace_fp = fopen(optarg, "r");
                 if (trace_fp == NULL) {
-                    printf("Error opening trace file %s\n", optarg);
+                    printf("%s: No such file or directory\n", optarg);
                     exit(1);
                 }
                 break;
