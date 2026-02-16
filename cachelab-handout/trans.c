@@ -22,6 +22,19 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    int ii, jj, i, j, tmp; // ii, jj fix the block of B, i, j scan the block of A and put the value into B's fixed block
+    int bsize = 8; // block size, 8*8*4B = 256B, which is the size of one block in cache
+    for (ii = 0; ii < N; ii += bsize) {
+        for (jj = 0; jj < M; jj += bsize) {
+            for (i = ii; i < ii + bsize && i < N; i++) {
+                for (j = jj; j < jj + bsize && j < M; j++) {
+                    tmp = A[i][j];
+                    B[j][i] = tmp; // in the loop of i,j the B's block is used again and again,its good locality for time.
+                }
+            }
+        }
+    }
+
 }
 
 /* 
