@@ -42,6 +42,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
         for (ii = 0; ii < N; ii += 8) {
             for (jj = 0; jj < M; jj += 8) {
 
+
                 i = ii;
 
                 for (i = ii; i < ii + 4 && i < N; i++) {
@@ -75,13 +76,14 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                     
                 }
                 
-                j = 0;
-                for (i = ii + 4; i < ii + 8 && i < N; i++, j++)
+                i = 0;
+                ii = ii + 4; // for the third loop of i, j, we need to fix the block of B, so we need to move ii to the next block of A, which is ii + 4, and then we can put the value of A's block into B's block together, which can reduce the miss of B's block and improve the performance.
+                for (j = jj; i < jj + 4 && i < M; i++, j++)
                 {
-                    tmp0 = B[i - 4][jj];
-                    tmp1 = B[i - 4][jj + 1];
-                    tmp2 = B[i - 4][jj + 2];
-                    tmp3 = B[i - 4][jj + 3];
+                    tmp0 = B[j - 4][ii];
+                    tmp1 = B[j - 4][ii + 1];
+                    tmp2 = B[j - 4][ii + 2];
+                    tmp3 = B[j - 4][ii + 3];
 
                     tmp4 = A[ii + 4][jj - 4 + j];
                     tmp5 = A[ii + 5][jj - 4 + j];
@@ -118,6 +120,9 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             }
         }
     }
+
+
+    
 
     // if (is_transpose(M, N, A, B) == 0) {
     //     printf("Transpose is incorrect!\n");
