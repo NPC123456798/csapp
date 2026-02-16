@@ -41,7 +41,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     } else {
         for (ii = 0; ii < N; ii += 8) {
             for (jj = 0; jj < M; jj += 8) {
-
+                // if (ii != jj) continue;
 
                 
 
@@ -114,6 +114,64 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 jj = jj - 4; // move jj back to the original position for the next block of B
             }
         }
+
+
+
+        // for (ii = 0; ii < N; ii += 8) {
+        //     for (jj = 0; jj < M; jj += 8) {
+        //         if (ii == jj) continue; // for the diagonal block, we have already transposed it in the previous loop, so we can skip it in this loop.
+
+        //         for (i = 0; i < 4; i++ ) {
+        //             tmp0 = A[ii + i][jj];
+        //             tmp1 = A[ii + i][jj + 1];
+        //             tmp2 = A[ii + i][jj + 2];
+        //             tmp3 = A[ii + i][jj + 3];
+
+        //             B[jj][ii + i] = tmp0;
+        //             B[jj + 1][ii + i] = tmp1;
+        //             B[jj + 2][ii + i] = tmp2;
+        //             B[jj + 3][ii + i] = tmp3;
+        //         }
+
+        //         for (i = 0; i < 4; i++ ) {
+        //             tmp0 = A[ii + i][jj + 4];
+        //             tmp1 = A[ii + i][jj + 5];
+        //             tmp2 = A[ii + i][jj + 6];
+        //             tmp3 = A[ii + i][jj + 7];
+
+        //             B[jj + 4][ii + i] = tmp0;
+        //             B[jj + 5][ii + i] = tmp1;
+        //             B[jj + 6][ii + i] = tmp2;
+        //             B[jj + 7][ii + i] = tmp3;
+        //         }
+
+        //         for (i = 0; i < 4; i++ ) {
+        //             tmp0 = A[ii + 4 + i][jj];
+        //             tmp1 = A[ii + 4 + i][jj + 1];
+        //             tmp2 = A[ii + 4 + i][jj + 2];
+        //             tmp3 = A[ii + 4 + i][jj + 3];
+
+        //             B[jj][ii + 4 + i] = tmp0;
+        //             B[jj + 1][ii + 4 + i] = tmp1;
+        //             B[jj + 2][ii + 4 + i] = tmp2;
+        //             B[jj + 3][ii + 4 + i] = tmp3;
+        //         }
+
+
+        //         for (i = 0; i < 4; i++ ) {
+        //             tmp0 = A[ii + 4 + i][jj + 4];
+        //             tmp1 = A[ii + 4 + i][jj + 5];
+        //             tmp2 = A[ii + 4 + i][jj + 6];
+        //             tmp3 = A[ii + 4 + i][jj + 7];
+
+        //             B[jj + 4][ii + 4 + i] = tmp0;
+        //             B[jj + 5][ii + 4 + i] = tmp1;
+        //             B[jj + 6][ii + 4 + i] = tmp2;
+        //             B[jj + 7][ii + 4 + i] = tmp3;
+        //         }
+
+        //     }
+        // }
     }
 
 
