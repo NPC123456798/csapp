@@ -25,48 +25,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int ii, jj, i, j; // ii, jj fix the block of B, i, j scan the block of A and put the value into B's fixed block
     // int bsize = 8; // block size, 8*8*4B = 256B, which is the size of one block in cache
-    int tmp0,tmp1,tmp2,tmp3; // for 64*64 case, we can use 8 registers to store the value of one block of A, and then put them into B's block. This can reduce the number of misses because we only need to read one block of A and write one block of B in the loop of i,j.
-    if (M == 64 && N == 64)
-    {
-        for (ii = 0; ii < N; ii += 4) {
-            for (jj = 0; jj < M; jj += 4) {
-                if (ii != jj)
-                    { 
-                        for (i = ii; i < ii + 4 && i < N; i++) {
-
-                            tmp0 = A[i][jj];
-                            tmp1 = A[i][jj+1];
-                            tmp2 = A[i][jj+2];
-                            tmp3 = A[i][jj+3];
-                            
-                            // Ð´Èë B£¨×ªÖÃ£©
-                            B[jj][i]   = tmp0;
-                            B[jj+1][i] = tmp1;
-                            B[jj+2][i] = tmp2;
-                            B[jj+3][i] = tmp3;
-                        }
-                    } else {
-                        tmp0 = A[ii][jj];
-                        tmp1 = A[ii + 1][jj + 1];
-                        tmp2 = A[ii + 2][jj + 2];
-                        tmp3 = A[ii + 3][jj + 3];
-                        B[jj][ii] = tmp0;
-                        B[jj + 1][ii + 1] = tmp1;
-                        B[jj + 2][ii + 2] = tmp2;
-                        B[jj + 3][ii + 3] = tmp3;
-                        for (i = ii; i < ii + 4 && i < N; i++) {
-                            for (j = jj; j < jj + 4 && j < M; j++) {
-                                if (i != j) {
-                                    tmp0 = A[i][j];
-                                    B[j][i] = tmp0;
-                                }
-                            }
-                        }
-                    }
-                
-            }
-        }
-    } else if (M == 61 && N == 67)   
+    int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7; // for 8*8 block, we need 8 temporary variables to store the value of A's block and put them into B's block together, which can reduce the miss of B's block and improve the performance.
+    if (M == 61 && N == 67)   
     {
         for (ii = 0; ii < N; ii += 16) {
             for (jj = 0; jj < M; jj += 16) {
@@ -81,15 +41,88 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     } else {
         for (ii = 0; ii < N; ii += 8) {
             for (jj = 0; jj < M; jj += 8) {
-                for (i = ii; i < ii + 8 && i < N; i++) {
-                    for (j = jj; j < jj + 8 && j < M; j++) {
-                        tmp0 = A[i][j];
-                        B[j][i] = tmp0; // in the loop of i,j the B's block is used again and again,its good locality for time.
-                    }
+
+                i = ii;
+
+                for (i = ii; i < ii + 4 && i < N; i++) {
+                    
+                    tmp0 = A[i][jj];
+                    tmp1 = A[i][jj+1];
+                    tmp2 = A[i][jj+2];
+                    tmp3 = A[i][jj+3];
+                    
+                    
+                    B[jj][i]   = tmp0;
+                    B[jj+1][i] = tmp1;
+                    B[jj+2][i] = tmp2;
+                    B[jj+3][i] = tmp3;
+                    
                 }
+
+                jj = jj + 4; // for the second loop of i, j, we need to fix the block of B, so we need to move jj to the next block of B, which is jj + 4, and then we can put the value of A's block into B's block together, which can reduce the miss of B's block and improve the performance.
+                for (i = ii; i < ii + 4 && i < N; i++) {
+                    
+                    tmp0 = A[i][jj];
+                    tmp1 = A[i][jj+1];
+                    tmp2 = A[i][jj+2];
+                    tmp3 = A[i][jj+3];
+                    
+                    
+                    B[jj - 4][i + 4]   = tmp0;
+                    B[jj - 3][i + 4] = tmp1;
+                    B[jj - 2][i + 4] = tmp2;
+                    B[jj - 1][i + 4] = tmp3;
+                    
+                }
+                
+                j = 0;
+                for (i = ii + 4; i < ii + 8 && i < N; i++, j++)
+                {
+                    tmp0 = B[i - 4][jj];
+                    tmp1 = B[i - 4][jj + 1];
+                    tmp2 = B[i - 4][jj + 2];
+                    tmp3 = B[i - 4][jj + 3];
+
+                    tmp4 = A[ii + 4][jj - 4 + j];
+                    tmp5 = A[ii + 5][jj - 4 + j];
+                    tmp6 = A[ii + 6][jj - 4 + j];
+                    tmp7 = A[ii + 7][jj - 4 + j];
+
+                    B[i - 4][jj] = tmp4;
+                    B[i - 4][jj + 1] = tmp5;
+                    B[i - 4][jj + 2] = tmp6;
+                    B[i - 4][jj + 3] = tmp7;
+
+                    tmp4 = A[ii + 4][jj + j];
+                    tmp5 = A[ii + 5][jj + j];
+                    tmp6 = A[ii + 6][jj + j];
+                    tmp7 = A[ii + 7][jj + j];
+
+                    B[i][jj] = tmp4;
+                    B[i][jj + 1] = tmp5;
+                    B[i][jj + 2] = tmp6;
+                    B[i][jj + 3] = tmp7;
+
+                    B[i][jj - 4] = tmp0;
+                    B[i][jj - 3] = tmp1;
+                    B[i][jj - 2] = tmp2;
+                    B[i][jj - 1] = tmp3;
+                }
+                
+
+
+
+
+
+                jj = jj - 4; // move jj back to the original position for the next block of B
             }
         }
     }
+
+    // if (is_transpose(M, N, A, B) == 0) {
+    //     printf("Transpose is incorrect!\n");
+    //     exit(1);
+    // }
 }
 
 
