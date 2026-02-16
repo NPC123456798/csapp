@@ -43,7 +43,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             for (jj = 0; jj < M; jj += 8) {
 
 
-                i = ii;
+                
 
                 for (i = ii; i < ii + 4 && i < N; i++) {
                     
@@ -51,71 +51,66 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                     tmp1 = A[i][jj+1];
                     tmp2 = A[i][jj+2];
                     tmp3 = A[i][jj+3];
-                    
+                    tmp4 = A[i][jj+4];
+                    tmp5 = A[i][jj+5];
+                    tmp6 = A[i][jj+6];
+                    tmp7 = A[i][jj+7];
                     
                     B[jj][i]   = tmp0;
                     B[jj+1][i] = tmp1;
                     B[jj+2][i] = tmp2;
                     B[jj+3][i] = tmp3;
-                    
+                    B[jj][i + 4] = tmp4;
+                    B[jj+1][i + 4] = tmp5;
+                    B[jj+2][i + 4] = tmp6;
+                    B[jj+3][i + 4] = tmp7;
                 }
 
                 jj = jj + 4; // for the second loop of i, j, we need to fix the block of B, so we need to move jj to the next block of B, which is jj + 4, and then we can put the value of A's block into B's block together, which can reduce the miss of B's block and improve the performance.
-                for (i = ii; i < ii + 4 && i < N; i++) {
-                    
-                    tmp0 = A[i][jj];
-                    tmp1 = A[i][jj+1];
-                    tmp2 = A[i][jj+2];
-                    tmp3 = A[i][jj+3];
-                    
-                    
-                    B[jj - 4][i + 4]   = tmp0;
-                    B[jj - 3][i + 4] = tmp1;
-                    B[jj - 2][i + 4] = tmp2;
-                    B[jj - 1][i + 4] = tmp3;
-                    
-                }
+                
                 
                 i = 0;
                 ii = ii + 4; // for the third loop of i, j, we need to fix the block of B, so we need to move ii to the next block of A, which is ii + 4, and then we can put the value of A's block into B's block together, which can reduce the miss of B's block and improve the performance.
-                for (j = jj; i < jj + 4 && i < M; i++, j++)
+                for (j = jj; i < 4 && j < M; i++, j++)
                 {
                     tmp0 = B[j - 4][ii];
                     tmp1 = B[j - 4][ii + 1];
                     tmp2 = B[j - 4][ii + 2];
                     tmp3 = B[j - 4][ii + 3];
 
-                    tmp4 = A[ii + 4][jj - 4 + j];
-                    tmp5 = A[ii + 5][jj - 4 + j];
-                    tmp6 = A[ii + 6][jj - 4 + j];
-                    tmp7 = A[ii + 7][jj - 4 + j];
+                    tmp4 = A[ii][jj - 4 + i];
+                    tmp5 = A[ii + 1][jj - 4 + i];
+                    tmp6 = A[ii + 2][jj - 4 + i];
+                    tmp7 = A[ii + 3][jj - 4 + i];
 
-                    B[i - 4][jj] = tmp4;
-                    B[i - 4][jj + 1] = tmp5;
-                    B[i - 4][jj + 2] = tmp6;
-                    B[i - 4][jj + 3] = tmp7;
+                    B[j - 4][ii] = tmp4;
+                    B[j - 4][ii + 1] = tmp5;
+                    B[j - 4][ii + 2] = tmp6;
+                    B[j - 4][ii + 3] = tmp7;
 
-                    tmp4 = A[ii + 4][jj + j];
-                    tmp5 = A[ii + 5][jj + j];
-                    tmp6 = A[ii + 6][jj + j];
-                    tmp7 = A[ii + 7][jj + j];
+                    tmp4 = A[ii ][jj + i];
+                    tmp5 = A[ii + 1][jj + i];
+                    tmp6 = A[ii + 2][jj + i];
+                    tmp7 = A[ii + 3][jj + i];
 
-                    B[i][jj] = tmp4;
-                    B[i][jj + 1] = tmp5;
-                    B[i][jj + 2] = tmp6;
-                    B[i][jj + 3] = tmp7;
+                    
 
-                    B[i][jj - 4] = tmp0;
-                    B[i][jj - 3] = tmp1;
-                    B[i][jj - 2] = tmp2;
-                    B[i][jj - 1] = tmp3;
+                    B[j][ii - 4] = tmp0;
+                    B[j][ii - 3] = tmp1;
+                    B[j][ii - 2] = tmp2;
+                    B[j][ii - 1] = tmp3;
+
+                    B[j][ii] = tmp4;
+                    B[j][ii + 1] = tmp5;
+                    B[j][ii + 2] = tmp6;
+                    B[j][ii + 3] = tmp7;
                 }
                 
 
 
 
 
-
+                ii = ii - 4; // move ii back to the original position for the next block of A
                 jj = jj - 4; // move jj back to the original position for the next block of B
             }
         }
