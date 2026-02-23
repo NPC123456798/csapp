@@ -291,6 +291,60 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    if (argv[1] == NULL)
+    {
+        printf("%s command requires PID or %%jobid argument\n", argv[0]);
+        return;
+    }
+    struct job_t *job = NULL;
+    switch (argv[1][0])
+    {
+        case '%':
+            job = getjobjid(jobs, atoi(&argv[1][1]));
+            
+            break;
+        
+        default:
+            if (isdigit(argv[1][0])) // here not using atoi directly because it will return 0 for invalid input, which can be confused with a valid PID of 0 (though unlikely)
+            {
+                job = getjobpid(jobs, atoi(argv[1]));
+            } else
+            {
+                printf("%s: argument must be a PID or %%jobid\n", argv[0]);
+                return;
+            }
+            break;
+    }
+    if (job == NULL)
+    {
+        printf("%%%d: No such job\n", atoi(&argv[1][1]));
+        return;
+    }
+            
+
+    if (job->state == FG)
+    {
+        printf("Job [%d] (%d) is already in the foreground\n", job->jid, job->pid);
+        return;
+    }
+    if (kill(job->pid, SIGCONT) < 0)
+    {
+        unix_error("bg: kill error");
+    }
+
+
+    if (!strcmp(argv[0], "bg"))
+    {
+        job->state = BG;
+        printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);   /* Print background job info */
+        
+        
+    } else
+    {
+        job->state = FG;
+        waitfg(job->pid);
+    }
+    
     return;
 }
 
