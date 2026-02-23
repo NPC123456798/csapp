@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+
 /* Misc manifest constants */
 #define MAXLINE    1024   /* max line size */
 #define MAXARGS     128   /* max args on a command line */
@@ -165,6 +166,45 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    sigset_t mask, prev;
+    char *argv[MAXARGS]; /* Argument list execve() */
+    pid_t pid;
+    int bg = parseline(cmdline, argv);
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &mask, &prev);   /* Block SIGCHLD signals */
+    if (argv[0] == NULL)
+    {
+        return;   /* Ignore empty lines */
+    } else if (builtin_cmd(argv))
+    {
+        return;   /* If it's a built-in command, execute it immediately */
+    }
+    pid = fork();
+    if (pid < 0) {
+        perror("fork error");   /* Fork failed */
+        exit(1);
+    } else if (pid == 0)
+    {
+        setpgid(0, 0);   /* Set the child process group ID to its own PID */
+        if (execve(argv[0], argv, environ) < 0) {
+            fprintf(stderr, "%s: Command not found.\n", argv[0]);
+            exit(1);
+        }
+        exit(0);
+    } 
+    setpgid(pid, pid);   // do it again in the parent process to ensure the child is in its own process group
+    addjob(jobs, pid, bg ? BG : FG, cmdline);   /* Add the job to the job list */
+    sigprocmask(SIG_SETMASK, &prev, NULL);   /* Unblock SIGCHLD signals */
+    if (!bg)
+    {
+        waitfg(pid);   /* Wait for the foreground job to terminate */
+    } else
+    {
+        printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);   /* Print background job info */
+    }
+    
+    
     return;
 }
 
@@ -247,6 +287,11 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    if (waitpid(pid, NULL, 0) != pid)
+    {
+        unix_error("waitfg: waitpid error");
+    }
+    
     return;
 }
 
