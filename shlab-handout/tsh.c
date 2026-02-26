@@ -293,6 +293,7 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    int is_job = 0;
     if (argv[1] == NULL)
     {
         printf("%s command requires PID or %%jobid argument\n", argv[0]);
@@ -303,7 +304,7 @@ void do_bgfg(char **argv)
     {
         case '%':
             job = getjobjid(jobs, atoi(&argv[1][1]));
-            
+            is_job = 1;
             break;
         
         default:
@@ -319,7 +320,16 @@ void do_bgfg(char **argv)
     }
     if (job == NULL)
     {
-        printf("%%%d: No such job\n", atoi(&argv[1][1]));
+        if (is_job)
+        {
+            printf("%%%d: No such job\n", atoi(&argv[1][1]));
+        }
+        else
+        {
+            printf("(%d): No such process\n", atoi(&argv[1][0]));
+        }
+        
+        
         return;
     }
             
@@ -329,7 +339,8 @@ void do_bgfg(char **argv)
         printf("Job [%d] (%d) is already in the foreground\n", job->jid, job->pid);
         return;
     }
-    if (kill(job->pid, SIGCONT) < 0)
+    if (kill(-job->pid, SIGCONT) < 0) // here you must use the -pid for wake up all processes in the pid's corresponding process group 
+    // or you will meet the parent process can't end because its child process doesn't wake up then everything is blocked
     {
         unix_error("bg: kill error");
     }
@@ -416,6 +427,12 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    pid_t pid = fgpid(jobs);
+    if (pid)
+    {
+        kill(-pid, SIGINT);
+    }
+    
     return;
 }
 
@@ -426,7 +443,11 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-    printf("received ctrl-z");
+    pid_t pid = fgpid(jobs);
+    if (pid)
+    {
+        kill(-pid, SIGTSTP); // here should be sigtstp instead of sigstop because sigstop signal shouldn't be caught. 
+    }
     return;
 }
 
