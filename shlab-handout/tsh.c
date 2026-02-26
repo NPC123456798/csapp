@@ -186,6 +186,7 @@ void eval(char *cmdline)
         exit(1);
     } else if (pid == 0)
     {
+        sigprocmask(SIG_SETMASK, &prev, NULL);   /* Unblock SIGCHLD signals in the child process */
         setpgid(0, 0);   /* Set the child process group ID to its own PID */
         if (execve(argv[0], argv, environ) < 0) {
             fprintf(stderr, "%s: Command not found.\n", argv[0]);
@@ -196,6 +197,7 @@ void eval(char *cmdline)
     setpgid(pid, pid);   // do it again in the parent process to ensure the child is in its own process group
     addjob(jobs, pid, bg ? BG : FG, cmdline);   /* Add the job to the job list */
     sigprocmask(SIG_SETMASK, &prev, NULL);   /* Unblock SIGCHLD signals */
+    // the argument of setmask means replace the whole current mask and the block means add new but not remove old and the unblock means remove but not add.
     if (!bg)
     {
         waitfg(pid);   /* Wait for the foreground job to terminate */
@@ -353,9 +355,14 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-    if (waitpid(pid, NULL, 0) != pid)
+    sigset_t mask;
+    sigemptyset(&mask);
+    while (fgpid(jobs) == pid)
     {
-        unix_error("waitfg: waitpid error");
+        // this function's set mask and pause the process is same in the instant, 
+        // and this function will call handler when receive signal,which can avoid the conflict between set and pause.
+        sigsuspend(&mask); // this function will set new mask for the caller process
+        //  but recover the old mask when return. and its return only happen when receive a signal.
     }
     
     return;
