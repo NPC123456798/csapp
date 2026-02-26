@@ -381,6 +381,31 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    pid_t pid;
+    int status;
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0)
+    {
+        if (WIFEXITED(status))
+        {
+            deletejob(jobs, pid);
+        } else if (WIFSIGNALED(status))
+        {
+            sig = WTERMSIG(status); // this macro will return the value of signal id, which special for the process over signal.
+            printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
+            deletejob(jobs, pid);
+        } else if (WIFSTOPPED(status))
+        {
+            sig = WSTOPSIG(status); // this macro will return the value of signal id. which special for the process stop signal.
+            getjobpid(jobs, pid)->state = ST;
+            printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid, sig);
+
+        }
+        
+        
+        
+    }
+    
+    
     return;
 }
 
@@ -401,6 +426,7 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    printf("received ctrl-z");
     return;
 }
 
