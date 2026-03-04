@@ -44,11 +44,20 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+#define WSIZE 4             /* Word and header/footer size (bytes) */
+#define DSIZE 8             /* Double word size (bytes) */
+#define CHUNKSIZE (1<<12)  /* Extend heap by this amount (bytes) */
+
+
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
+    void *heap_listp;
+    if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
+        return -1;
+    
     return 0;
 }
 
