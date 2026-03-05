@@ -112,20 +112,20 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
-    int newsize = ALIGN(size + SIZE_T_SIZE);
+    int newSize = ALIGN(size + SIZE_T_SIZE);
     void *bp = heap_listp;
     while (GET_SIZE(HDRP(bp)) > 0)
     {
-        if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newsize))
+        if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newSize))
         {
             size_t csize = GET_SIZE(HDRP(bp));
-            if ((csize - newsize) >= (2*DSIZE))
+            if ((csize - newSize) >= (2*DSIZE))
             {
-                PUT(HDRP(bp), PACK(newsize, 1));
-                PUT(FTRP(bp), PACK(newsize, 1));
+                PUT(HDRP(bp), PACK(newSize, 1));
+                PUT(FTRP(bp), PACK(newSize, 1));
                 bp = NEXT_BLKP(bp);
-                PUT(HDRP(bp), PACK(csize - newsize, 0));
-                PUT(FTRP(bp), PACK(csize - newsize, 0));
+                PUT(HDRP(bp), PACK(csize - newSize, 0));
+                PUT(FTRP(bp), PACK(csize - newSize, 0));
                 bp = PREV_BLKP(bp);
             }
             else
@@ -137,8 +137,8 @@ void *mm_malloc(size_t size)
         }
         bp = NEXT_BLKP(bp);
     }
-    size_t extendsize = ALIGN(MAX(newsize, CHUNKSIZE));
-    extend_heap(extendsize / WSIZE);
+    size_t extendSize = ALIGN(MAX(newSize, CHUNKSIZE));
+    extend_heap(extendSize / WSIZE);
     return mm_malloc(size);
 }
 
