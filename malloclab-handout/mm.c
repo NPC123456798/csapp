@@ -79,7 +79,7 @@ void *heap_listp = 0;
 
 void *extend_heap(size_t words);
 void *coalesce(void *bp);
-
+void *easy_realloc(void *ptr, size_t size);
 
 
 
@@ -158,21 +158,58 @@ void mm_free(void *ptr)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
+
+    void *oldptr = ptr;
+    size_t copySize = GET_SIZE(HDRP(oldptr)) - SIZE_T_SIZE; // when the allocated block has footer and header is subtract 8 but if only have header is subtract 4
+    
+    
+    if (ptr == NULL)
+    {
+        return mm_malloc(size);
+        
+    }
+    if (size == 0)
+    {
+        mm_free(ptr);
+        return NULL;
+    }
+
+    
+
+    if (copySize >= size)
+    {
+        // TODO: if the old block is big enough, we can just split the block and return the old pointer
+        return oldptr; // if the old block is already big enough, just return the old pointer
+    }
+    
+    /*  the two judgement is to check if the next block is free and the size of the next block plus the current block is enough for the new size,
+        if one of the judgement is true we can't merge the current block with the next block to get a bigger block,
+        so we need to malloc a new block and copy the old data to the new block and free the old block */
+    if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) || ( GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize < size) )
+    {
+        return easy_realloc(ptr, size);
+    }
+
+    PUT(HDRP(oldptr), PACK(copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE, 1));
+    PUT(FTRP(oldptr), PACK(copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE, 1));
+    return oldptr;
+
+    
+}
+
+
+void *easy_realloc(void *ptr, size_t size)
+{
     void *oldptr = ptr;
     void *newptr;
-    size_t copySize;
-    
+    size_t copySize = GET_SIZE(HDRP(oldptr)) - SIZE_T_SIZE;
     newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
-      copySize = size;
+    if (newptr == NULL)            return NULL;
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
     return newptr;
+    
 }
-
 
 
 void *coalesce(void *bp)
