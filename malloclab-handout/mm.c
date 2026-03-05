@@ -67,6 +67,9 @@ team_t team = {
 
 
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y)) /* Return the maximum of x and y */
+
+
 #define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
 
 void *heap_listp = 0;
@@ -123,6 +126,7 @@ void *mm_malloc(size_t size)
                 bp = NEXT_BLKP(bp);
                 PUT(HDRP(bp), PACK(csize - newsize, 0));
                 PUT(FTRP(bp), PACK(csize - newsize, 0));
+                bp = PREV_BLKP(bp);
             }
             else
             {
@@ -133,7 +137,9 @@ void *mm_malloc(size_t size)
         }
         bp = NEXT_BLKP(bp);
     }
-    
+    size_t extendsize = ALIGN(MAX(newsize, CHUNKSIZE));
+    extend_heap(extendsize / WSIZE);
+    return mm_malloc(size);
 }
 
 /*
