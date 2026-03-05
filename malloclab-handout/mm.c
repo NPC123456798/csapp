@@ -68,7 +68,7 @@ team_t team = {
 
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y)) /* Return the maximum of x and y */
-
+#define MIN(x, y) ((x) < (y) ? (x) : (y)) /* Return the minimum of x and y */
 
 #define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
 
@@ -174,6 +174,7 @@ void *mm_realloc(void *ptr, size_t size)
         return NULL;
     }
 
+
     
 
     if (copySize >= size)
@@ -185,13 +186,16 @@ void *mm_realloc(void *ptr, size_t size)
     /*  the two judgement is to check if the next block is free and the size of the next block plus the current block is enough for the new size,
         if one of the judgement is true we can't merge the current block with the next block to get a bigger block,
         so we need to malloc a new block and copy the old data to the new block and free the old block */
-    if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) || ( GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize < size) )
+    if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) || ( GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize <= size) )
     {
         return easy_realloc(ptr, size);
     }
+    
+    size_t newSize = copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE; // the new size after merge the current block with the next block, we need to add the header size back to get the total size of the new block
 
-    PUT(HDRP(oldptr), PACK(copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE, 1));
-    PUT(FTRP(oldptr), PACK(copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE, 1));
+    // TODO: problem should be here
+    PUT(HDRP(oldptr), PACK(newSize, 1));
+    PUT(FTRP(oldptr), PACK(newSize, 1));
     return oldptr;
 
     
@@ -202,7 +206,9 @@ void *easy_realloc(void *ptr, size_t size)
 {
     void *oldptr = ptr;
     void *newptr;
-    size_t copySize = GET_SIZE(HDRP(oldptr)) - SIZE_T_SIZE;
+    size_t copySize = MIN(GET_SIZE(HDRP(oldptr)) - SIZE_T_SIZE, size);
+
+
     newptr = mm_malloc(size);
     if (newptr == NULL)            return NULL;
     memcpy(newptr, oldptr, copySize);
