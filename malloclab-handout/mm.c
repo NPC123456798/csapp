@@ -69,7 +69,20 @@ team_t team = {
 
 #define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
 
-void *heap_listp;
+void *heap_listp = 0;
+
+
+
+
+void *extend_heap(size_t words);
+void *coalesce(void *bp);
+
+
+
+
+
+
+
 
 /* 
  * mm_init - initialize the malloc package.
@@ -84,7 +97,9 @@ int mm_init(void)
     PUT(heap_listp + (3*WSIZE), PACK(0, 1));     /* Epilogue header */
     heap_listp += (2*WSIZE); // Move heap_listp to point to the first block's payload, because prologue block don't have payload so it point to the footer of prologue block
 
-
+    if (extend_heap(ALIGN(CHUNKSIZE / WSIZE)) == NULL)
+        return -1;
+    
     return 0;
 }
 
@@ -95,13 +110,30 @@ int mm_init(void)
 void *mm_malloc(size_t size)
 {
     int newsize = ALIGN(size + SIZE_T_SIZE);
-    void *p = mem_sbrk(newsize);
-    if (p == (void *)-1)
-	return NULL;
-    else {
-        *(size_t *)p = size;
-        return (void *)((char *)p + SIZE_T_SIZE);
+    void *bp = heap_listp;
+    while (GET_SIZE(HDRP(bp)) > 0)
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newsize))
+        {
+            size_t csize = GET_SIZE(HDRP(bp));
+            if ((csize - newsize) >= (2*DSIZE))
+            {
+                PUT(HDRP(bp), PACK(newsize, 1));
+                PUT(FTRP(bp), PACK(newsize, 1));
+                bp = NEXT_BLKP(bp);
+                PUT(HDRP(bp), PACK(csize - newsize, 0));
+                PUT(FTRP(bp), PACK(csize - newsize, 0));
+            }
+            else
+            {
+                PUT(HDRP(bp), PACK(csize, 1));
+                PUT(FTRP(bp), PACK(csize, 1));
+            }
+            return bp;
+        }
+        bp = NEXT_BLKP(bp);
     }
+    
 }
 
 /*
@@ -109,6 +141,10 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+    size_t size = GET_SIZE(HDRP(ptr));
+    PUT(HDRP(ptr), PACK(size, 0));
+    PUT(FTRP(ptr), PACK(size, 0));
+    coalesce(ptr);
 }
 
 /*
@@ -169,7 +205,7 @@ void *coalesce(void *bp)
 void *extend_heap(size_t words)
 {
     void *bp;
-    if (bp = mem_sbrk(words * WSIZE) == (void *)-1)
+    if ((bp = mem_sbrk(words * WSIZE)) == (void *)-1)
         return NULL;
     PUT(HDRP(bp), PACK(words * WSIZE, 0)); /* Free block header */
     PUT(FTRP(bp), PACK(words * WSIZE, 0)); /* Free block footer */
