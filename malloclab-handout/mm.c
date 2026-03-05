@@ -62,8 +62,12 @@ team_t team = {
 #define NEXT_BLKP(bp)  ((char *)(bp) + GET_SIZE(HDRP(bp)))         /* Given block ptr bp, compute address of next block */
 #define PREV_BLKP(bp)  ((char *)(bp) - GET_SIZE((char *)(bp) - DSIZE))    /* Given block ptr bp, compute address of previous block */
 
+// must use = to set allocated bit or the memory don't change
+#define SET_FREE(p) (GET(p) &= ~0x1) /* Set allocated bit to 0 */
 
 
+
+#define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
 
 void *heap_listp;
 
@@ -129,7 +133,15 @@ void *mm_realloc(void *ptr, size_t size)
 
 
 
+void *coalesce(void *bp)
+{
+    return bp;
+}
 
+void *extend_heap(size_t words)
+{
+    return NULL;
+}
 
 
 
