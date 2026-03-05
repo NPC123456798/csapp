@@ -49,15 +49,38 @@ team_t team = {
 #define CHUNKSIZE (1<<12)  /* Extend heap by this amount (bytes) */
 
 
+#define PACK(size, alloc)  ((size) | (alloc)) /* Pack a size and allocated bit into a word */
+#define GET(p)       (*(unsigned int *)(p))            /* Read a word at address p */
+#define PUT(p, val)  (*(unsigned int *)(p) = (val))  /* Write a word at address p */
+
+
+#define GET_SIZE(p)  (GET(p) & ~0x7) /* Get size from header/footer */
+#define GET_ALLOC(p) (GET(p) & 0x1)  /* Get allocated bit from header/footer */
+
+#define HDRP(bp)       ((char *)(bp) - WSIZE)          /* Given block ptr bp, compute address of its header */
+#define FTRP(bp)       ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE) /* Given block ptr bp, compute address of its footer */
+#define NEXT_BLKP(bp)  ((char *)(bp) + GET_SIZE(HDRP(bp)))         /* Given block ptr bp, compute address of next block */
+#define PREV_BLKP(bp)  ((char *)(bp) - GET_SIZE((char *)(bp) - DSIZE))    /* Given block ptr bp, compute address of previous block */
+
+
+
+
+void *heap_listp;
+
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
-    void *heap_listp;
     if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
         return -1;
-    
+    PUT(heap_listp, 0);                          /* Alignment padding */
+    PUT(heap_listp + (1*WSIZE), PACK(DSIZE, 1)); /* Prologue header */
+    PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
+    PUT(heap_listp + (3*WSIZE), PACK(0, 1));     /* Epilogue header */
+    heap_listp += (2*WSIZE); // Move heap_listp to point to the first block's payload, because prologue block don't have payload so it point to the footer of prologue block
+
+
     return 0;
 }
 
