@@ -135,12 +135,47 @@ void *mm_realloc(void *ptr, size_t size)
 
 void *coalesce(void *bp)
 {
+    size_t prev_alloc = GET_PREV_ALLOC(bp);
+    size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
+    size_t size = GET_SIZE(HDRP(bp));
+    if (prev_alloc && next_alloc)
+    {
+        return bp;
+    }
+    else if (prev_alloc && !next_alloc)
+    {
+        size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        PUT(HDRP(bp), PACK(size, 0));
+        PUT(FTRP(bp), PACK(size, 0));
+    }
+    else if (!prev_alloc && next_alloc)
+    {
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        PUT(FTRP(bp), PACK(size, 0));
+        bp = PREV_BLKP(bp);
+    }
+    else
+    {
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
+        bp = PREV_BLKP(bp);
+    }
+    
     return bp;
 }
 
 void *extend_heap(size_t words)
 {
-    return NULL;
+    void *bp;
+    if (bp = mem_sbrk(words * WSIZE) == (void *)-1)
+        return NULL;
+    PUT(HDRP(bp), PACK(words * WSIZE, 0)); /* Free block header */
+    PUT(FTRP(bp), PACK(words * WSIZE, 0)); /* Free block footer */
+    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */
+    return coalesce(bp);
+
 }
 
 
