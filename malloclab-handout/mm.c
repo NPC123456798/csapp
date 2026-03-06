@@ -229,7 +229,8 @@ void *easy_realloc(void *ptr, size_t size)
     
 }
 
-
+/* the key idea is the bp's free block never is inserted into the free list when it is coalesced
+    so you must insert it into the free list in the coalesce function and never try to delete the bp's free block */
 void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_PREV_ALLOC(bp);
