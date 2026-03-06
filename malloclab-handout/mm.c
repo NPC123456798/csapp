@@ -80,7 +80,7 @@ void *heap_listp = 0;
 void *extend_heap(size_t words);
 void *coalesce(void *bp);
 void *easy_realloc(void *ptr, size_t size);
-
+void *find_fit(size_t asize);
 
 
 
@@ -112,31 +112,14 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
+    void *bp;
     int newSize = ALIGN(size + SIZE_T_SIZE);
-    void *bp = heap_listp;
-    while (GET_SIZE(HDRP(bp)) > 0)
+    bp = find_fit(size);
+    if ( bp != NULL)
     {
-        if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newSize))
-        {
-            size_t csize = GET_SIZE(HDRP(bp));
-            if ((csize - newSize) >= (2*DSIZE))
-            {
-                PUT(HDRP(bp), PACK(newSize, 1));
-                PUT(FTRP(bp), PACK(newSize, 1));
-                bp = NEXT_BLKP(bp);
-                PUT(HDRP(bp), PACK(csize - newSize, 0));
-                PUT(FTRP(bp), PACK(csize - newSize, 0));
-                bp = PREV_BLKP(bp);
-            }
-            else
-            {
-                PUT(HDRP(bp), PACK(csize, 1));
-                PUT(FTRP(bp), PACK(csize, 1));
-            }
-            return bp;
-        }
-        bp = NEXT_BLKP(bp);
+        return bp;
     }
+    
     size_t extendSize = ALIGN(MAX(newSize, CHUNKSIZE));
     extend_heap(extendSize / WSIZE);
     return mm_malloc(size);
@@ -186,7 +169,7 @@ void *mm_realloc(void *ptr, size_t size)
     /*  the two judgement is to check if the next block is free and the size of the next block plus the current block is enough for the new size,
         if one of the judgement is true we can't merge the current block with the next block to get a bigger block,
         so we need to malloc a new block and copy the old data to the new block and free the old block */
-    if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) || ( GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize <= size) )
+    if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) || ( GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize < size) )
     {
         return easy_realloc(ptr, size);
     }
@@ -263,6 +246,41 @@ void *extend_heap(size_t words)
 
 }
 
+
+void *find_fit(size_t asize)
+{
+    if (asize == 0)
+    {
+        return NULL;
+    }
+    
+    int newSize = ALIGN(asize + SIZE_T_SIZE);
+    void *bp = heap_listp;
+    while (GET_SIZE(HDRP(bp)) > 0)
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newSize))
+        {
+            size_t csize = GET_SIZE(HDRP(bp));
+            if ((csize - newSize) >= (2*DSIZE))
+            {
+                PUT(HDRP(bp), PACK(newSize, 1));
+                PUT(FTRP(bp), PACK(newSize, 1));
+                bp = NEXT_BLKP(bp);
+                PUT(HDRP(bp), PACK(csize - newSize, 0));
+                PUT(FTRP(bp), PACK(csize - newSize, 0));
+                bp = PREV_BLKP(bp);
+            }
+            else
+            {
+                PUT(HDRP(bp), PACK(csize, 1));
+                PUT(FTRP(bp), PACK(csize, 1));
+            }
+            return bp;
+        }
+        bp = NEXT_BLKP(bp);
+    }
+    return NULL;
+}
 
 
 
