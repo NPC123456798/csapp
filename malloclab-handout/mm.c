@@ -17,7 +17,7 @@
 
 #include "mm.h"
 #include "memlib.h"
-
+// score: 69
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -44,6 +44,7 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+/* size macros */
 #define WSIZE 4             /* Word and header/footer size (bytes) */
 #define DSIZE 8             /* Double word size (bytes) */
 #define CHUNKSIZE (1<<12)  /* Extend heap by this amount (bytes) */
@@ -56,6 +57,9 @@ team_t team = {
 
 #define GET_SIZE(p)  (GET(p) & ~0x7) /* Get size from header/footer */
 #define GET_ALLOC(p) (GET(p) & 0x1)  /* Get allocated bit from header/footer */
+#define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
+
+
 
 #define HDRP(bp)       ((char *)(bp) - WSIZE)          /* Given block ptr bp, compute address of its header */
 #define FTRP(bp)       ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE) /* Given block ptr bp, compute address of its footer */
@@ -67,13 +71,24 @@ team_t team = {
 
 
 
+/* pointer set and get */
+#define PREV_NODE(bp) ((char*)( *(unsigned int *)(bp)))
+#define NEXT_NODE(bp) ((char*)( *(unsigned int *)(bp + WSIZE)))
+#define SET_PRED(bp, val) (*(unsigned  *)(bp) = (unsigned)(long)val) 
+#define SET_SUCC(bp,val) (*(unsigned  *)((char*)bp + WSIZE) = (unsigned)(long)val) 
+
+
+
+/* compare macro */ 
 #define MAX(x, y) ((x) > (y) ? (x) : (y)) /* Return the maximum of x and y */
 #define MIN(x, y) ((x) < (y) ? (x) : (y)) /* Return the minimum of x and y */
 
-#define GET_PREV_ALLOC(bp) (GET(HDRP(PREV_BLKP(bp))) & 0x1) /* Get allocated bit of previous block */
+
+
+
 
 void *heap_listp = 0;
-
+void *free_list_head = NULL;
 
 
 
@@ -81,8 +96,8 @@ void *extend_heap(size_t words);
 void *coalesce(void *bp);
 void *easy_realloc(void *ptr, size_t size);
 void *find_fit(size_t asize);
-
-
+void insert_free_block(void *bp);
+void insert(void * bp, void *old_head);
 
 
 
@@ -92,6 +107,17 @@ void *find_fit(size_t asize);
  */
 int mm_init(void)
 {
+    free_list_head = mem_heap_lo();
+    if (mem_sbrk(2 * WSIZE) == (void *) -1)
+        return -1;
+    SET_PRED(free_list_head, NULL);
+    SET_SUCC(free_list_head, NULL);
+    
+
+
+
+
+
     if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
         return -1;
     PUT(heap_listp, 0);                          /* Alignment padding */
@@ -99,6 +125,9 @@ int mm_init(void)
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
     PUT(heap_listp + (3*WSIZE), PACK(0, 1));     /* Epilogue header */
     heap_listp += (2*WSIZE); // Move heap_listp to point to the first block's payload, because prologue block don't have payload so it point to the footer of prologue block
+
+    
+
 
     if (extend_heap(ALIGN(CHUNKSIZE / WSIZE)) == NULL)
         return -1;
@@ -208,16 +237,19 @@ void *coalesce(void *bp)
     size_t size = GET_SIZE(HDRP(bp));
     if (prev_alloc && next_alloc)
     {
+        insert_free_block(bp);
         return bp;
     }
     else if (prev_alloc && !next_alloc)
     {
+        delete_node(NEXT_BLKP(bp));
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
     }
     else if (!prev_alloc && next_alloc)
     {
+        delete_node(PREV_BLKP(bp)); // here can't delete the current bp because if extend the bp not inserted to free list.
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
@@ -225,12 +257,14 @@ void *coalesce(void *bp)
     }
     else
     {
+        delete_node(PREV_BLKP(bp)); // here can't delete the current bp because free will come here and the current bp is not inserted to free list yet after  freeing it
+        delete_node(NEXT_BLKP(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
-    
+    insert_free_block(bp);
     return bp;
 }
 
@@ -255,12 +289,13 @@ void *find_fit(size_t asize)
     }
     
     int newSize = ALIGN(asize + SIZE_T_SIZE);
-    void *bp = heap_listp;
-    while (GET_SIZE(HDRP(bp)) > 0)
+    void *bp = free_list_head;
+    while (NEXT_NODE(bp) != NULL) // we can't check bp because this will go to the free_list_head and it doesn't have header and footer, so we need to check the next node of bp
     {
         if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= newSize))
         {
             size_t csize = GET_SIZE(HDRP(bp));
+            delete_node(bp);
             if ((csize - newSize) >= (2*DSIZE))
             {
                 PUT(HDRP(bp), PACK(newSize, 1));
@@ -268,6 +303,7 @@ void *find_fit(size_t asize)
                 bp = NEXT_BLKP(bp);
                 PUT(HDRP(bp), PACK(csize - newSize, 0));
                 PUT(FTRP(bp), PACK(csize - newSize, 0));
+                coalesce(bp);
                 bp = PREV_BLKP(bp);
             }
             else
@@ -277,16 +313,72 @@ void *find_fit(size_t asize)
             }
             return bp;
         }
-        bp = NEXT_BLKP(bp);
+        bp = NEXT_NODE(bp);
     }
     return NULL;
 }
 
+/* use LIFO, the insert node will be inserted at the head of the list */
+void insert_free_block(void *bp)
+{
+    void *old_head = free_list_head;
 
 
+    
+
+    while (old_head != NULL)
+    {
+        void *next = NEXT_NODE(old_head);
+        if (next == NULL)
+        {
+            insert(bp, old_head);
+            return;
+        }
+        size_t old_size = GET_SIZE(HDRP(old_head));
+        size_t new_size = GET_SIZE(HDRP(bp));
+        if (new_size <= old_size)
+        {
+            insert(bp, old_head);
+            
+            return;
+        }
+        old_head = next;
+        
+    }
+    
+}
+
+void insert(void * bp, void *old_head)
+{
+    SET_SUCC(bp, old_head);
+    SET_PRED(bp, PREV_NODE(old_head));
+    if (PREV_NODE(old_head) != NULL)
+    {
+        SET_SUCC(PREV_NODE(old_head), bp);
+    }
+    SET_PRED(old_head, bp);
+    if (old_head == free_list_head)
+    {
+        free_list_head = bp;
+    }
+}
 
 
-
-
-
+void delete_node(void *bp)
+{
+    void *prev = PREV_NODE(bp);
+    void *next = NEXT_NODE(bp);
+    if (prev != NULL)
+    {
+        SET_SUCC(prev, next);
+    }
+    if (next != NULL)
+    {
+        SET_PRED(next, prev);
+    }
+    if (bp == free_list_head)
+    {
+        free_list_head = next;
+    }
+}
 
