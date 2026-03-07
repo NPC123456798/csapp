@@ -17,7 +17,7 @@
 
 #include "mm.h"
 #include "memlib.h"
-// score: 69
+// score: 90
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -202,7 +202,7 @@ void *mm_realloc(void *ptr, size_t size)
     {
         return easy_realloc(ptr, size);
     }
-    
+    delete_node(NEXT_BLKP(oldptr)); // here can't delete the current bp because its allocated block.
     size_t newSize = copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE; // the new size after merge the current block with the next block, we need to add the header size back to get the total size of the new block
 
     // TODO: problem should be here
