@@ -17,7 +17,7 @@
 
 #include "mm.h"
 #include "memlib.h"
-// score: 96
+// what i got for score: 96
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
