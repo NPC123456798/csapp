@@ -469,10 +469,7 @@ size_t get_index(size_t size)
 
 size_t adjust_alloc_size(size_t size) 
 {
-    // freeciv.rep
-    if (size >= 120 && size < 128) {
-        return 128;
-    }
+    
     // binary.rep
     if (size >= 448 && size < 512) {
         return 512;
