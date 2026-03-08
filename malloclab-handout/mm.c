@@ -175,7 +175,7 @@ int mm_init(void)
 void *mm_malloc(size_t size)
 {
     void *bp;
-    int newSize = ALIGN(size + SIZE_T_SIZE);
+    int newSize = ALIGN(size + WSIZE);
     bp = find_fit(size);
     if ( bp != NULL)
     {
@@ -210,7 +210,7 @@ void *mm_realloc(void *ptr, size_t size)
 {
 
     void *oldptr = ptr;
-    size_t copySize = GET_SIZE(HDRP(oldptr)) - SIZE_T_SIZE; // when the allocated block has footer and header is subtract 8 but if only have header is subtract 4
+    size_t copySize = GET_SIZE(HDRP(oldptr)) - WSIZE; // when the allocated block has footer and header is subtract 8 but if only have header is subtract 4
     
     
     if (ptr == NULL)
@@ -243,7 +243,7 @@ void *mm_realloc(void *ptr, size_t size)
         return easy_realloc(ptr, size);
     }
     delete_node(NEXT_BLKP(oldptr)); // here can't delete the current bp because its allocated block.
-    size_t newSize = copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + SIZE_T_SIZE; // the new size after merge the current block with the next block, we need to add the header size back to get the total size of the new block
+    size_t newSize = copySize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + WSIZE; // the new size after merge the current block with the next block, we need to add the header size back to get the total size of the new block
 
 
     PUT(HDRP(oldptr), PACK_ALL(newSize, GET_PREV_ALLOC(HDRP(oldptr)), 1));
@@ -341,7 +341,7 @@ void *find_fit(size_t asize)
     asize = adjust_alloc_size(asize);
 
     size_t set_index = get_index(asize);
-    int newSize = ALIGN(asize + SIZE_T_SIZE);
+    int newSize = ALIGN(asize + WSIZE);
     void *bp = GET_HEAD_I(set_index);
     // here should search from set_index's set and go up to search set because the index higher the ser's free block size higher
     while (set_index < MAX_BUCKETS_NUM)
