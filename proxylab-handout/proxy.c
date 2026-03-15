@@ -42,8 +42,8 @@ int main(int argc, char **argv)
         *connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
         Pthread_create(&tid, NULL, proxy_thread, connfd);
     }
-
-    printf("%s", user_agent_hdr);
+    Close(listenfd);
+    
     return 0;
 }
 
@@ -94,9 +94,7 @@ void handle_client(int fd)
         return;
     }
     do_get(fd, uri, &rio);
-    printf("Method: %s\n", method);
-    printf("URI: %s\n", uri);
-    printf("Version: %s\n", version);
+    
 }
 
 
@@ -106,15 +104,61 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
     
     parse_uri(uri, hostname, port, path);
     char *headers = parse_headers(client_rio, buf, hostname);
+    if (headers == NULL)
+    {
+        unix_error("Read headers fail");
+        return;
+    }
     
-    // add the fixed header
-    strcat(headers, "Connection: close\r\n");
-    strcat(headers, "Proxy-Connection: close\r\n");
-    strcat(headers, user_agent_hdr);
-    // add the end empty row 
-    strcat(headers, "\r\n");
 
 
+    if (strlen(hostname) == 0) {
+        unix_error("Without hostname");
+        return;
+    }
+
+    // start connect to the server, get the file description of server, the proxy as the client to the server
+    int serverfd = Open_clientfd(hostname, port);
+    if (serverfd < 0)
+    {
+        return;
+    }
+
+    rio_t server_rio;
+    Rio_readinitb(&server_rio, serverfd);
+    
+    char request[MAXLINE];
+    // proxy request headers
+    sprintf(request, "GET %s %s\r\n%s", path, "HTTP/1.0", headers);
+    if (Rio_writen(serverfd, request, strlen(request)) == 1) {
+        unix_error("send proxy request headers fail");
+        return;
+    }
+    
+
+    
+    
+    char response[MAXLINE];
+    int n;
+
+    while ((n = Rio_readnb(&server_rio, response, MAXLINE)) > 0) {
+        if (n < 0) {
+            fprintf(stderr, "Read server response error\n");
+            close(serverfd);
+            return;
+        }
+        
+        if (Rio_writen(client_rio->rio_fd, response, MAXLINE) == 1) {
+            unix_error("Write response to client fail");
+            close(serverfd);
+            return;
+        }
+
+    }
+
+
+    close(serverfd);
+    return;
 }
 
 
@@ -159,8 +203,14 @@ void parse_uri(char *uri, char *hostname, char *port, char *path) {
 char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {
     char *headers = (char *)Calloc(MAXLINE, sizeof(char));
     int total = 0, capacity = MAXLINE;
+    int err = 0;
 
-    while (Rio_readlineb(client_rio, buf, MAXLINE) > 0) {
+    while ((err = Rio_readlineb(client_rio, buf, MAXLINE))) {
+        if (err < 0)
+        {
+            return NULL;
+        }
+        
         if (strcmp(buf, "\r\n") == 0) break;
         int len = strlen(buf);
     
@@ -188,6 +238,13 @@ char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {
             total += len;
         }
     }
+
+    // add the fixed header
+    strcat(headers, "Connection: close\r\n");
+    strcat(headers, "Proxy-Connection: close\r\n");
+    strcat(headers, user_agent_hdr);
+    // add the end empty row 
+    strcat(headers, "\r\n");
 }
 
 

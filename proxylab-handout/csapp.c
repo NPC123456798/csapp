@@ -905,10 +905,14 @@ ssize_t Rio_readn(int fd, void *ptr, size_t nbytes)
     return n;
 }
 
-void Rio_writen(int fd, void *usrbuf, size_t n) 
+int Rio_writen(int fd, void *usrbuf, size_t n) 
 {
-    if (rio_writen(fd, usrbuf, n) != n)
-	unix_error("Rio_writen error");
+    if (rio_writen(fd, usrbuf, n) != n) 
+    {
+        unix_error("Rio_writen error");
+        return 1;
+    }
+    return 0;
 }
 
 void Rio_readinitb(rio_t *rp, int fd)
