@@ -380,7 +380,7 @@ int floatFloat2Int(unsigned uf) {
     }
     counter = counter - 1;
   }
-  fracToInt = fracToInt | (1 << (exp)); // add the implicit leading 1
+  fracToInt = fracToInt | (1 << (exp)); // add the implicit leading 1 for the normalized case
   fracToInt = sign ? -fracToInt : fracToInt;
   return fracToInt;
 }
