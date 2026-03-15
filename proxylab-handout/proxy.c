@@ -16,6 +16,7 @@ void *proxy_thread(void *vargp);
 void handle_client(int fd);
 void do_get(int fd, char *uri, rio_t *client_rio);
 void parse_uri(char *uri, char *hostname, char *port, char *path);
+char *parse_headers(rio_t *client_rio, char *buf, char *hostname);
 int should_forward(char *header);
 
 
@@ -102,38 +103,18 @@ void handle_client(int fd)
 void do_get(int fd, char *uri, rio_t *client_rio) {
     char hostname[MAXLINE] = "", port[10] = "80", path[MAXLINE];
     char buf[MAXLINE];
-    char *headers = (char *)Calloc(MAXLINE, sizeof(char));
-    int total = 0, capacity = MAXLINE;
-    parse_uri(uri, hostname, port, path);
-
-    while (Rio_readlineb(client_rio, buf, MAXLINE) > 0) {
-        if (strcmp(buf, "\r\n") == 0) break;
-        int len = strlen(buf);
     
-        // extend size if too large the headers is
-        if (total + len >= capacity) {
-            capacity *= 2;
-            headers = Realloc(headers, capacity);
-            if (headers == NULL)
-            {
-                return;
-            }
-            
-        }
-        
+    parse_uri(uri, hostname, port, path);
+    char *headers = parse_headers(client_rio, buf, hostname);
+    
+    // add the fixed header
+    strcat(headers, "Connection: close\r\n");
+    strcat(headers, "Proxy-Connection: close\r\n");
+    strcat(headers, user_agent_hdr);
+    // add the end empty row 
+    strcat(headers, "\r\n");
 
-        // if not has hostname£¬try to get from Host header
-        if (strlen(hostname) == 0 && 
-            strncasecmp(buf, "Host:", 5) == 0) {
-            sscanf(buf, "Host: %s", hostname);
-        }
-        
-        // filter unessential header
-        if (should_forward(buf)) {
-            strcpy(headers + total, buf);
-            total += len;
-        }
-    }
+
 }
 
 
@@ -174,6 +155,50 @@ void parse_uri(char *uri, char *hostname, char *port, char *path) {
         strcpy(hostname, p);
     }
 }
+
+char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {
+    char *headers = (char *)Calloc(MAXLINE, sizeof(char));
+    int total = 0, capacity = MAXLINE;
+
+    while (Rio_readlineb(client_rio, buf, MAXLINE) > 0) {
+        if (strcmp(buf, "\r\n") == 0) break;
+        int len = strlen(buf);
+    
+        // extend size if too large the headers is
+        if (total + len >= capacity) {
+            capacity *= 2;
+            headers = Realloc(headers, capacity);
+            if (headers == NULL)
+            {
+                return;
+            }
+            
+        }
+        
+
+        // if not has hostname. try to get from Host header
+        if (strlen(hostname) == 0 && 
+            strncasecmp(buf, "Host:", 5) == 0) {
+            sscanf(buf, "Host: %s", hostname);
+        }
+        
+        // filter unessential header
+        if (should_forward(buf)) {
+            strcpy(headers + total, buf);
+            total += len;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 /* judge if need to add to headers */
 int should_forward(char *header) {
