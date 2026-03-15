@@ -13,7 +13,7 @@ static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64;
 
 
 void * proxy_thread(void *vargp);
-
+void handle_client(int fd);
 
 
 
@@ -52,5 +52,35 @@ void * proxy_thread(void *vargp)
     int connfd = *((int *)vargp);
     Pthread_detach(pthread_self());
     Free(vargp);
+
+
+
+    handle_client(connfd);
+
+
+
+
+    Close(connfd);
+
     return NULL;
+}
+
+/* handle_client - Handle a client request */
+void handle_client(int fd) 
+{
+    char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
+    rio_t rio;
+
+    Rio_readinitb(&rio, fd);
+    Rio_readlineb(&rio, buf, MAXLINE);
+    sscanf(buf, "%s %s %s", method, uri, version);
+
+    if (strcasecmp(method, "GET")) {
+        printf("Proxy does not implement the method");
+        return;
+    }
+
+    printf("Method: %s\n", method);
+    printf("URI: %s\n", uri);
+    printf("Version: %s\n", version);
 }
