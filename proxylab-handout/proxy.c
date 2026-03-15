@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 }
 
 
-void * proxy_thread(void *vargp) 
+void *proxy_thread(void *vargp) 
 {
     int connfd = *((int *)vargp);
     Pthread_detach(pthread_self());
@@ -90,6 +90,7 @@ void handle_client(int fd)
 
     
     if (strcasecmp(method, "GET")) {
+        fprintf(stderr, "method:%s\n", method, strerror(errno));
         unix_error("Proxy does not implement the method");
         return;
     }

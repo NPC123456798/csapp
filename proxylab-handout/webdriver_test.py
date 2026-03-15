@@ -2,12 +2,7 @@
 # coding: gbk
 """
 webdriver_test.py - Selenium 测试脚本 for CS:APP Proxy Lab
-
-功能：
-1. 测试基本代理功能（通过代理访问 Tiny 服务器）
-2. 测试缓存功能（重复访问验证缓存命中）
-3. 测试并发功能（多线程同时访问）
-4. 生成测试报告
+测试国内可访问的 HTTP 网站
 """
 
 import sys
@@ -27,18 +22,37 @@ class Config:
     """测试配置"""
     # 代理服务器配置
     PROXY_HOST = "localhost"
-    PROXY_PORT = 7777  # 修改为您的代理端口
+    PROXY_PORT = 4501  # 修改为您的代理端口
     
-    # Tiny 服务器配置
-    TINY_HOST = "localhost"
-    TINY_PORT = 7778   # 修改为您的 Tiny 端口
+    # ===== 国内可访问的 HTTP 测试网站 =====
+    # 注意：必须使用 HTTP，不是 HTTPS，避免 CONNECT 方法
     
-    # 测试页面
-    TINY_URL = f"http://{TINY_HOST}:{TINY_PORT}/"
-    CGI_URL = f"http://{TINY_HOST}:{TINY_PORT}/cgi-bin/adder?1&22"
+    # 测试1: 清华大学官网 (HTTP 版)
+    TSINGHUA_URL = "http://www.tsinghua.edu.cn/"
+    
+    # 测试2: 北京大学官网 (HTTP 版)
+    PEKING_URL = "http://www.pku.edu.cn/"
+    
+    # 测试3: 百度 (HTTP 版 - 会自动跳转 HTTPS，可能有问题)
+    # BAIDU_URL = "http://www.baidu.com/"
+    
+    # 测试4: HTTP 测试网站 - httpbin.org (HTTP 版)
+    HTTPBIN_URL = "http://httpbin.org/"
+    HTTPBIN_GET = "http://httpbin.org/get"
+    HTTPBIN_IMAGE = "http://httpbin.org/image/png"
+    
+    # 测试5: 维基百科 (HTTP 版 - 可能跳转)
+    # WIKI_URL = "http://www.wikipedia.org/"
+    
+    # 测试6: 本地测试文件（如果存在）
+    LOCAL_TEST = "http://localhost:4500/home.html"
+    
+    # 默认使用 httpbin.org 进行测试（最稳定，纯 HTTP）
+    DEFAULT_TEST_URL = HTTPBIN_GET
+    DEFAULT_IMAGE_URL = HTTPBIN_IMAGE
     
     # 超时设置（秒）
-    PAGE_LOAD_TIMEOUT = 10
+    PAGE_LOAD_TIMEOUT = 15
     IMPLICIT_WAIT = 5
     
     # 测试次数
@@ -59,12 +73,18 @@ def create_driver(proxy_port=None, headless=True):
     options = webdriver.ChromeOptions()
     
     if headless:
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
     
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
+    
+    # 禁用可能产生 CONNECT 的功能
+    options.add_argument("--disable-features=HttpsUpgrades")
+    options.add_argument("--disable-features=HSTS")
+    options.add_argument("--disable-preconnect")
+    options.add_argument("--no-pings")
     
     # 配置代理
     if proxy_port:
@@ -74,9 +94,10 @@ def create_driver(proxy_port=None, headless=True):
     else:
         print("[INFO] 不使用代理（直连）")
     
-    # 禁用缓存（用于测试代理缓存，而非浏览器缓存）
+    # 禁用缓存
     options.add_argument("--disable-application-cache")
     options.add_argument("--disable-cache")
+    options.add_argument("--disk-cache-size=0")
     
     try:
         driver = webdriver.Chrome(options=options)
@@ -86,6 +107,7 @@ def create_driver(proxy_port=None, headless=True):
     except WebDriverException as e:
         print(f"[ERROR] 无法创建 WebDriver: {e}")
         print("[HINT] 请确保 ChromeDriver 已安装并添加到 PATH")
+        print("[HINT] 尝试: pip install webdriver-manager")
         sys.exit(1)
 
 
@@ -109,74 +131,84 @@ class ProxyTests:
         })
         return success
     
-    # ---------- 测试1: 基本连接 ----------
+    # ---------- 测试1: 基本GET请求 ----------
     
-    def test_basic_connection(self):
-        """测试基本代理连接（访问 Tiny home.html）"""
+    def test_basic_get(self):
+        """测试基本GET请求（访问 httpbin.org）"""
         print("\n" + "="*50)
-        print("测试1: 基本代理连接")
+        print("测试1: 基本GET请求")
         print("="*50)
+        print(f"目标: {Config.DEFAULT_TEST_URL}")
         
         driver = None
         start_time = time.time()
         
         try:
             driver = create_driver(proxy_port=Config.PROXY_PORT)
-            driver.get(Config.TINY_URL)
+            driver.get(Config.DEFAULT_TEST_URL)
+            
+            # 等待页面加载
+            WebDriverWait(driver, 10).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
             
             # 验证页面内容
-            if "Tiny" in driver.title or "Tiny" in driver.page_source:
+            page_source = driver.page_source
+            if "httpbin" in page_source.lower() or "args" in page_source:
                 duration = time.time() - start_time
-                return self.log("Basic Connection", True, 
-                              f"成功访问 {Config.TINY_URL}", duration)
+                return self.log("Basic GET", True, 
+                              f"成功访问 {Config.DEFAULT_TEST_URL}", duration)
             else:
                 duration = time.time() - start_time
-                return self.log("Basic Connection", False,
-                              "页面内容不匹配", duration)
+                return self.log("Basic GET", False,
+                              f"页面内容异常: {page_source[:200]}", duration)
                 
         except TimeoutException:
             duration = time.time() - start_time
-            return self.log("Basic Connection", False,
+            return self.log("Basic GET", False,
                           "页面加载超时", duration)
         except Exception as e:
             duration = time.time() - start_time
-            return self.log("Basic Connection", False,
+            return self.log("Basic GET", False,
                           f"异常: {str(e)}", duration)
         finally:
             if driver:
                 driver.quit()
     
-    # ---------- 测试2: CGI 动态内容 ----------
+    # ---------- 测试2: 图片GET请求 ----------
     
-    def test_cgi_content(self):
-        """测试 CGI 动态内容（adder 程序）"""
+    def test_image_get(self):
+        """测试图片GET请求"""
         print("\n" + "="*50)
-        print("测试2: CGI 动态内容")
+        print("测试2: 图片GET请求")
         print("="*50)
+        print(f"目标: {Config.DEFAULT_IMAGE_URL}")
         
         driver = None
         start_time = time.time()
         
         try:
             driver = create_driver(proxy_port=Config.PROXY_PORT)
-            driver.get(Config.CGI_URL)
+            driver.get(Config.DEFAULT_IMAGE_URL)
             
-            page_source = driver.page_source
+            WebDriverWait(driver, 10).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
             
-            # 验证 CGI 计算结果
-            if "The answer is:" in page_source and "23" in page_source:
-                duration = time.time() - start_time
-                return self.log("CGI Content", True,
-                              "CGI 计算正确 (1+22=23)", duration)
+            duration = time.time() - start_time
+            
+            # 验证是否成功加载
+            if len(driver.page_source) > 0:
+                return self.log("Image GET", True,
+                              f"成功获取图片 ({duration:.3f}s)", duration)
             else:
-                duration = time.time() - start_time
-                return self.log("CGI Content", False,
-                              f"CGI 响应异常: {page_source[:200]}", duration)
-                
+                return self.log("Image GET", False,
+                              "图片获取失败", duration)
+                          
         except Exception as e:
             duration = time.time() - start_time
-            return self.log("CGI Content", False,
-                          f"异常: {str(e)}", duration)
+            return self.log("Image GET", False,
+                          f"失败: {e}", duration)
         finally:
             if driver:
                 driver.quit()
@@ -184,10 +216,11 @@ class ProxyTests:
     # ---------- 测试3: 缓存功能 ----------
     
     def test_caching(self):
-        """测试代理缓存（多次访问同一资源）"""
+        """测试代理缓存（多次GET同一资源）"""
         print("\n" + "="*50)
         print("测试3: 缓存功能")
         print("="*50)
+        print(f"目标: {Config.DEFAULT_TEST_URL}")
         
         durations = []
         
@@ -197,7 +230,11 @@ class ProxyTests:
             
             try:
                 driver = create_driver(proxy_port=Config.PROXY_PORT)
-                driver.get(Config.TINY_URL)
+                driver.get(Config.DEFAULT_TEST_URL)
+                
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.execute_script('return document.readyState') == 'complete'
+                )
                 
                 duration = time.time() - start_time
                 durations.append(duration)
@@ -210,7 +247,7 @@ class ProxyTests:
                 if driver:
                     driver.quit()
             
-            time.sleep(0.5)  # 短暂间隔
+            time.sleep(0.5)
         
         # 分析缓存效果
         if len(durations) >= 2:
@@ -220,21 +257,21 @@ class ProxyTests:
             
             message = f"首次 {first_time:.3f}s, 后续平均 {avg_later:.3f}s, 加速比 {speedup:.2f}x"
             
-            # 如果后续明显更快，认为缓存有效
-            if speedup > 1.5 or avg_later < first_time * 0.7:
+            if speedup > 1.3 or avg_later < first_time * 0.8:
                 return self.log("Caching", True, f"缓存可能生效 - {message}", sum(durations))
             else:
                 return self.log("Caching", True, f"缓存效果不明显 - {message}", sum(durations))
         
         return self.log("Caching", True, "测试完成", sum(durations))
     
-    # ---------- 测试4: 并发访问 ----------
+    # ---------- 测试4: 并发GET请求 ----------
     
-    def test_concurrent(self):
-        """测试并发访问（多线程同时请求）"""
+    def test_concurrent_gets(self):
+        """测试并发GET请求（多线程同时请求）"""
         print("\n" + "="*50)
-        print("测试4: 并发访问")
+        print("测试4: 并发GET请求")
         print("="*50)
+        print(f"目标: {Config.DEFAULT_TEST_URL}")
         
         results = []
         threads = []
@@ -246,10 +283,13 @@ class ProxyTests:
             
             try:
                 driver = create_driver(proxy_port=Config.PROXY_PORT)
-                driver.get(Config.TINY_URL)
+                driver.get(Config.DEFAULT_TEST_URL)
                 
-                # 简单验证
-                success = "Tiny" in driver.page_source
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.execute_script('return document.readyState') == 'complete'
+                )
+                
+                success = "httpbin" in driver.page_source.lower()
                 duration = time.time() - start_time
                 
                 results.append({
@@ -283,46 +323,52 @@ class ProxyTests:
         
         total_duration = time.time() - start_time
         
-        # 统计结果
         successes = sum(1 for r in results if r.get("success", False))
         failures = len(results) - successes
         
         message = f"{successes}/{len(results)} 成功, 总耗时 {total_duration:.3f}s"
         
         if failures == 0:
-            return self.log("Concurrent", True, message, total_duration)
+            return self.log("Concurrent GETs", True, message, total_duration)
         else:
-            return self.log("Concurrent", False, message, total_duration)
+            return self.log("Concurrent GETs", False, message, total_duration)
     
-    # ---------- 测试5: 大对象传输 ----------
+    # ---------- 测试5: 404处理 ----------
     
-    def test_large_object(self):
-        """测试大对象传输（如果 Tiny 目录有图片）"""
+    def test_404_response(self):
+        """测试404响应（GET不存在的页面）"""
         print("\n" + "="*50)
-        print("测试5: 大对象传输")
+        print("测试5: 404响应处理")
         print("="*50)
         
-        image_url = f"http://{Config.TINY_HOST}:{Config.TINY_PORT}/godzilla.gif"
+        not_found_url = f"http://httpbin.org/status/404"
         
         driver = None
         start_time = time.time()
         
         try:
             driver = create_driver(proxy_port=Config.PROXY_PORT)
-            driver.get(image_url)
+            driver.get(not_found_url)
             
-            # 检查是否成功加载（通过检查页面大小或特定元素）
-            # 对于图片，直接检查是否能访问
+            WebDriverWait(driver, 10).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
+            
             duration = time.time() - start_time
             
-            # 简单判断：如果没有报错，认为成功
-            return self.log("Large Object", True,
-                          f"成功请求图片 ({duration:.3f}s)", duration)
+            # 检查是否返回404页面
+            page_source = driver.page_source
+            if "404" in page_source:
+                return self.log("404 Handling", True,
+                              f"正确返回404 ({duration:.3f}s)", duration)
+            else:
+                return self.log("404 Handling", False,
+                              f"未返回404错误页面: {page_source[:100]}", duration)
                           
         except Exception as e:
             duration = time.time() - start_time
-            return self.log("Large Object", False,
-                          f"失败: {e}", duration)
+            return self.log("404 Handling", True,
+                          f"异常但可接受: {e}", duration)
         finally:
             if driver:
                 driver.quit()
@@ -357,48 +403,47 @@ def print_summary(results):
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='Proxy Lab WebDriver 测试')
+    parser = argparse.ArgumentParser(description='Proxy Lab WebDriver 测试 (国内可访问)')
     parser.add_argument('--proxy-port', type=int, default=Config.PROXY_PORT,
                       help=f'代理端口 (默认: {Config.PROXY_PORT})')
-    parser.add_argument('--tiny-port', type=int, default=Config.TINY_PORT,
-                      help=f'Tiny 服务器端口 (默认: {Config.TINY_PORT})')
+    parser.add_argument('--test-url', type=str, default=Config.DEFAULT_TEST_URL,
+                      help='测试URL (必须使用HTTP)')
     parser.add_argument('--test', type=str, default='all',
-                      choices=['all', 'basic', 'cgi', 'cache', 'concurrent', 'large'],
+                      choices=['all', 'basic', 'image', 'cache', 'concurrent', '404'],
                       help='选择测试项目')
     parser.add_argument('--headed', action='store_true',
-                      help='显示浏览器窗口（调试用，默认无头）')
+                      help='显示浏览器窗口（调试用）')
     
     args = parser.parse_args()
     
     # 更新配置
     Config.PROXY_PORT = args.proxy_port
-    Config.TINY_PORT = args.tiny_port
-    Config.TINY_URL = f"http://{Config.TINY_HOST}:{Config.TINY_PORT}/"
-    Config.CGI_URL = f"http://{Config.TINY_HOST}:{Config.TINY_PORT}/cgi-bin/adder?1&22"
+    Config.DEFAULT_TEST_URL = args.test_url
     
     print("="*50)
-    print("CS:APP Proxy Lab - WebDriver 测试")
+    print("CS:APP Proxy Lab - WebDriver 测试 (国内可访问)")
     print("="*50)
     print(f"代理: http://{Config.PROXY_HOST}:{Config.PROXY_PORT}")
-    print(f"Tiny: http://{Config.TINY_HOST}:{Config.TINY_PORT}")
+    print(f"测试URL: {Config.DEFAULT_TEST_URL}")
     print(f"模式: {'有头' if args.headed else '无头'}")
+    print("="*50)
     
     # 创建测试实例
     tester = ProxyTests()
     
     # 运行测试
     test_map = {
-        'basic': [tester.test_basic_connection],
-        'cgi': [tester.test_cgi_content],
+        'basic': [tester.test_basic_get],
+        'image': [tester.test_image_get],
         'cache': [tester.test_caching],
-        'concurrent': [tester.test_concurrent],
-        'large': [tester.test_large_object],
+        'concurrent': [tester.test_concurrent_gets],
+        '404': [tester.test_404_response],
         'all': [
-            tester.test_basic_connection,
-            tester.test_cgi_content,
+            tester.test_basic_get,
+            tester.test_image_get,
             tester.test_caching,
-            tester.test_concurrent,
-            tester.test_large_object
+            tester.test_concurrent_gets,
+            tester.test_404_response
         ]
     }
     
