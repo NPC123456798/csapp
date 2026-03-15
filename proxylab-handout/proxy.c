@@ -135,7 +135,7 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
         return;
     }
     
-
+    Free(headers);
     
     
     char response[MAXLINE];
@@ -148,7 +148,7 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
             return;
         }
         
-        if (Rio_writen(client_rio->rio_fd, response, MAXLINE) == 1) {
+        if (Rio_writen(client_rio->rio_fd, response, n) == 1) {
             unix_error("Write response to client fail");
             close(serverfd);
             return;
@@ -208,6 +208,7 @@ char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {
     while ((err = Rio_readlineb(client_rio, buf, MAXLINE))) {
         if (err < 0)
         {
+            Free(headers);
             return NULL;
         }
         
@@ -245,6 +246,7 @@ char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {
     strcat(headers, user_agent_hdr);
     // add the end empty row 
     strcat(headers, "\r\n");
+    return headers;
 }
 
 
