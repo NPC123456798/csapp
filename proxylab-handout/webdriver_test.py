@@ -18,6 +18,8 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 # ==================== 配置 ====================
 
+
+chrome_driver_path = r"/usr/local/bin/chromedriver"
 class Config:
     """测试配置"""
     # 代理服务器配置
@@ -70,6 +72,9 @@ def create_driver(proxy_port=None, headless=True):
         proxy_port: 代理端口，None 表示不使用代理
         headless: 是否无头模式
     """
+    # 导入 Service 类（新增）
+    from selenium.webdriver.chrome.service import Service
+    
     options = webdriver.ChromeOptions()
     
     if headless:
@@ -99,15 +104,22 @@ def create_driver(proxy_port=None, headless=True):
     options.add_argument("--disable-cache")
     options.add_argument("--disk-cache-size=0")
     
+    # 使用您指定的驱动路径（使用文件开头的全局变量）
+    global chrome_driver_path
+    service = Service(executable_path=chrome_driver_path)
+    print(f"[INFO] 使用 ChromeDriver 路径: {chrome_driver_path}")
+
     try:
-        driver = webdriver.Chrome(options=options)
+        # 将 service 对象传递给 webdriver.Chrome
+        driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(Config.PAGE_LOAD_TIMEOUT)
         driver.implicitly_wait(Config.IMPLICIT_WAIT)
         return driver
     except WebDriverException as e:
         print(f"[ERROR] 无法创建 WebDriver: {e}")
-        print("[HINT] 请确保 ChromeDriver 已安装并添加到 PATH")
-        print("[HINT] 尝试: pip install webdriver-manager")
+        print(f"[HINT] 请检查指定的驱动路径是否正确: {chrome_driver_path}")
+        print("[HINT] 请确保 ChromeDriver 版本与本地 Chrome 浏览器版本匹配")
+        print("[HINT] 您可以通过浏览器访问 chrome://version/ 查看版本信息")
         sys.exit(1)
 
 
