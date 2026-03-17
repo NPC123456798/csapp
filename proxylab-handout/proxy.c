@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "csapp.h"
-
+#include "cache.h"
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
@@ -14,7 +14,7 @@ static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64;
 
 void *proxy_thread(void *vargp);
 void handle_client(int fd);
-void do_get(int fd, char *uri, rio_t *client_rio);
+void do_get(char *uri, rio_t *client_rio);
 void parse_uri(char *uri, char *hostname, char *port, char *path);
 char *parse_headers(rio_t *client_rio, char *buf, char *hostname);
 int should_forward(char *header);
@@ -36,6 +36,10 @@ int main(int argc, char **argv)
     }
     
     listenfd = Open_listenfd(argv[1]);
+
+
+    init_cache();
+
     while(1) {
         clientlen = sizeof(clientaddr);
         connfd = Malloc(sizeof(int));
@@ -94,12 +98,19 @@ void handle_client(int fd)
         unix_error("Proxy does not implement the method");
         return;
     }
-    do_get(fd, uri, &rio);
+    do_get(uri, &rio);
     
 }
 
 
-void do_get(int fd, char *uri, rio_t *client_rio) {
+void do_get(char *uri, rio_t *client_rio) {
+
+    if (check_cache_block_exist(client_rio, uri))
+    {
+        
+        return;
+    }
+    
     char hostname[MAXLINE] = "", port[10] = "80", path[MAXLINE];
     char buf[MAXLINE];
     
@@ -117,6 +128,15 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
         unix_error("Without hostname");
         return;
     }
+
+
+    
+    
+
+
+
+
+
 
     // start connect to the server, get the file description of server, the proxy as the client to the server
     int serverfd = Open_clientfd(hostname, port);
@@ -138,9 +158,11 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
     
     Free(headers);
     
-    
+    int resp_total = 0;
     char response[MAXLINE];
-    int n;
+    int n = 0;
+    char cache_block[MAX_OBJECT_SIZE];
+
 
     while ((n = Rio_readnb(&server_rio, response, MAXLINE)) > 0) {
         if (n < 0) {
@@ -149,6 +171,13 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
             return;
         }
         
+        // n express the current has read bytes in the response buffer
+        if (resp_total + n < MAX_OBJECT_SIZE) {
+            printf("resp_total: %d, n:%d\n", resp_total, n);
+            memcpy(cache_block + resp_total, response, n);
+        }
+        resp_total += n;
+
         if (Rio_writen(client_rio->rio_fd, response, n) == 1) {
             unix_error("Write response to client fail");
             close(serverfd);
@@ -157,6 +186,11 @@ void do_get(int fd, char *uri, rio_t *client_rio) {
 
     }
 
+    if (resp_total < MAX_OBJECT_SIZE) {
+        unix_error("here is check cache url at the add cache");
+        unix_error(uri);
+        add_cache_block(uri,cache_block, resp_total);
+    }
 
     close(serverfd);
     return;
@@ -180,11 +214,13 @@ void parse_uri(char *uri, char *hostname, char *port, char *path) {
     }
     
     // get the path
+    int judge_if_has_path = 0;
     char *path_start = strchr(p, '/');
     if (path_start) {
         
         strcpy(path, path_start);
         *path_start = '\0';
+        judge_if_has_path = 1;
     } else {
         strcpy(path, "/");
     }
@@ -199,6 +235,12 @@ void parse_uri(char *uri, char *hostname, char *port, char *path) {
     } else {
         strcpy(hostname, p);
     }
+
+    if (judge_if_has_path)
+    {
+        *path_start = '/';
+    }
+    
 }
 
 char *parse_headers(rio_t *client_rio, char *buf, char *hostname) {

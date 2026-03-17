@@ -18,6 +18,9 @@ void init_cache() {
 
 
 int check_cache_block_exist(rio_t *rio_p,char *url) {
+
+    unix_error("here is check cache url");
+    unix_error(url);
     P(&mutex);
     readcnt++; //because the mutex lock the readcnt can express the order of reader exactly
     if (readcnt == 1)
@@ -79,6 +82,7 @@ void add_cache_block(char *url, char* content, int content_size) {
             }
         }
         // replace the oldest cache block
+        
         strcpy(cache_t.cache_blocks[oldest_index].url, url);
         memcpy(cache_t.cache_blocks[oldest_index].content, content, content_size);
         cache_t.cache_blocks[oldest_index].content_size = content_size;
@@ -100,7 +104,7 @@ void add_cache_block(char *url, char* content, int content_size) {
         V(&mutex);
         cache_t.using_cache_num++;
     }
-    // ½âËø
+    // unlock
     V(&w);
     return 0;
 }
