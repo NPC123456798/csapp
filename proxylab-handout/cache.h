@@ -17,13 +17,15 @@ typedef struct
 
 
 
-typedef struct 
-{
-    
-} cache_set ;
-
 
 typedef struct 
 {
-    /* data */
-} cache_t;
+    int using_cache_num;
+    cache_block cache_t[MAX_CACHE_SET_NUM];
+} cache;
+
+
+
+void init_cache();
+int check_cache_block_exist(rio_t *rio_p,char *url);
+void add_cache_block(char *url, char* content, int content_size);
