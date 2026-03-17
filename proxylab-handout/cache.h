@@ -3,7 +3,7 @@
 
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
-#define MAX_CACHE_SET_NUM 10
+#define MAX_CACHE_NUM 10
 #define MAX_CACHE_SET_BLOCK_NUM 5
 
 
@@ -12,7 +12,7 @@ typedef struct
     char url[MAXLINE];
     char content[MAX_OBJECT_SIZE];
     int content_size;
-    int timestamp;
+    int operation_counter;
 } cache_block;
 
 
@@ -21,7 +21,7 @@ typedef struct
 typedef struct 
 {
     int using_cache_num;
-    cache_block cache_t[MAX_CACHE_SET_NUM];
+    cache_block cache_blocks[MAX_CACHE_NUM];
 } cache;
 
 
