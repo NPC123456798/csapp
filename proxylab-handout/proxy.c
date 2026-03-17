@@ -107,7 +107,6 @@ void do_get(char *uri, rio_t *client_rio) {
 
     if (check_cache_block_exist(client_rio, uri))
     {
-        
         return;
     }
     
@@ -173,7 +172,6 @@ void do_get(char *uri, rio_t *client_rio) {
         
         // n express the current has read bytes in the response buffer
         if (resp_total + n < MAX_OBJECT_SIZE) {
-            printf("resp_total: %d, n:%d\n", resp_total, n);
             memcpy(cache_block + resp_total, response, n);
         }
         resp_total += n;
@@ -187,8 +185,6 @@ void do_get(char *uri, rio_t *client_rio) {
     }
 
     if (resp_total < MAX_OBJECT_SIZE) {
-        unix_error("here is check cache url at the add cache");
-        unix_error(uri);
         add_cache_block(uri,cache_block, resp_total);
     }
 

@@ -19,8 +19,6 @@ void init_cache() {
 
 int check_cache_block_exist(rio_t *rio_p,char *url) {
 
-    unix_error("here is check cache url");
-    unix_error(url);
     P(&mutex);
     readcnt++; //because the mutex lock the readcnt can express the order of reader exactly
     if (readcnt == 1)
