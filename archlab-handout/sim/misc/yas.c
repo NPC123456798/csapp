@@ -22,7 +22,7 @@ int vcode = 0;
 /* Should it generate code for banked memory? */
 int block_factor = 0;
 
-int lineno = 1; /* Line number of input file */
+extern int lineno; /* Line number of input file */
 int bytepos = 0; /* Address of current instruction being processed */
 int error_mode = 0; /* Am I trying to finish off a line with an error? */
 int hit_error = 0; /* Have I hit any errors? */
@@ -48,7 +48,7 @@ typedef struct {
 
 /* Information about current input line */
 token_rec tokens[TOK_PER_LINE];
-int lineno;  /* What line number am I processing? */
+extern int lineno;  /* What line number am I processing? */
 int bytepos; /* What byte address is the current instruction */
 int tcount;  /* How many tokens are there in this line? */
 int tpos;    /* What token am I currently processing */
