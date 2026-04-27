@@ -22,7 +22,7 @@ int vcode = 0;
 /* Should it generate code for banked memory? */
 int block_factor = 0;
 
-int lineno = 0; /* Line number of input file */
+int lineno = 1; /* Line number of input file */
 int bytepos = 0; /* Address of current instruction being processed */
 int error_mode = 0; /* Am I trying to finish off a line with an error? */
 int hit_error = 0; /* Have I hit any errors? */
