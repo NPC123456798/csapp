@@ -1,0 +1,48 @@
+0x000:                      | .pos 0
+0x000: 30f40002000000000000 | irmovq stack, %rsp # set stack pointer
+0x00a: 804800000000000000   | call main # call main function
+0x013: 00                   | halt # stop program
+                            | 
+                            | 
+0x018:                      | .align 8
+                            | # Source block
+0x018:                      | src:
+0x018: 0a00000000000000     |     .quad 0x00a
+0x020: b000000000000000     |     .quad 0x0b0
+0x028: 000c000000000000     |     .quad 0xc00
+                            | # Destination block
+0x030:                      | dest:
+0x030: 1101000000000000     |     .quad 0x111
+0x038: 2202000000000000     |     .quad 0x222
+0x040: 3303000000000000     |     .quad 0x333
+                            | 
+0x048:                      | main:
+0x048: 30f61800000000000000 |     irmovq src, %rsi  # load address of source block into %rsi
+0x052: 30f73000000000000000 |     irmovq dest, %rdi # load address of destination block into %rdi
+0x05c: 30f10300000000000000 |     irmovq $3, %rcx   # set loop counter to 3 (number of elements)
+0x066: 6300                 |     xorq %rax, %rax   # clear %rax for use as temporary register
+0x068: 807200000000000000   |     call copy_block    # call copy_block function
+0x071: 90                   |     ret # return
+                            | 
+0x072:                      | copy_block:
+0x072: 6211                 |     andq %rcx, %rcx # set condition code based on loop counter
+0x074: 73bf00000000000000   |     je done # if loop counter is zero, we are done
+0x07d: 708600000000000000   |     jmp test
+                            | 
+0x086:                      | test:
+0x086: 50a60000000000000000 |     mrmovq (%rsi), %r10 # load current element from source into %r10
+0x090: 40a70000000000000000 |     rmmovq %r10, (%rdi) # store current element into destination
+0x09a: 30fb0800000000000000 |     irmovq $8, %r11 # set offset for next element
+0x0a4: 60b6                 |     addq %r11, %rsi # move to next element in source
+0x0a6: 60b7                 |     addq %r11, %rdi # move to next element in destination
+0x0a8: 63a0                 |     xorq %r10, %rax # clear %rax for use as temporary register
+0x0aa: 30fb0100000000000000 |     irmovq $1, %r11 # set increment value
+0x0b4: 61b1                 |     subq %r11, %rcx
+0x0b6: 707200000000000000   |     jmp copy_block # repeat loop
+                            | 
+0x0bf:                      | done:
+0x0bf: 90                   |     ret # return from copy_block
+                            | 
+                            | # Stack starts here and grows to lower addresses
+0x200:                      | 	.pos 0x200
+0x200:                      | stack:

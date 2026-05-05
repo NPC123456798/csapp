@@ -1,0 +1,48 @@
+.pos 0
+irmovq stack, %rsp # set stack pointer
+call main # call main function
+halt # stop program
+
+
+.align 8
+# Source block
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+main:
+    irmovq src, %rsi  # load address of source block into %rsi
+    irmovq dest, %rdi # load address of destination block into %rdi
+    irmovq $3, %rcx   # set loop counter to 3 (number of elements)
+    xorq %rax, %rax   # clear %rax for use as temporary register
+    call copy_block    # call copy_block function
+    ret # return
+
+copy_block:
+    andq %rcx, %rcx # set condition code based on loop counter
+    je done # if loop counter is zero, we are done
+    jmp test
+
+test:
+    mrmovq (%rsi), %r10 # load current element from source into %r10
+    rmmovq %r10, (%rdi) # store current element into destination
+    irmovq $8, %r11 # set offset for next element
+    addq %r11, %rsi # move to next element in source
+    addq %r11, %rdi # move to next element in destination
+    xorq %r10, %rax # clear %rax for use as temporary register
+    irmovq $1, %r11 # set increment value
+    subq %r11, %rcx
+    jmp copy_block # repeat loop
+
+done:
+    ret # return from copy_block
+
+# Stack starts here and grows to lower addresses
+	.pos 0x200
+stack:
