@@ -22,21 +22,22 @@ long long gen_instr_valid()
       (I_RRMOVQ) || (icode) == (I_IRMOVQ) || (icode) == (I_RMMOVQ) || 
       (icode) == (I_MRMOVQ) || (icode) == (I_ALU) || (icode) == (I_JMP) || 
       (icode) == (I_CALL) || (icode) == (I_RET) || (icode) == (I_PUSHQ) || 
-      (icode) == (I_POPQ) || (icode) == (I_IADDQ));
+      (icode) == (I_POPQ) || (icode) == (I_IADDQ) || (icode) == (I_JM));
 }
 
 long long gen_need_regids()
 {
     return ((icode) == (I_RRMOVQ) || (icode) == (I_ALU) || (icode) == 
       (I_PUSHQ) || (icode) == (I_POPQ) || (icode) == (I_IRMOVQ) || (icode)
-       == (I_RMMOVQ) || (icode) == (I_MRMOVQ) || (icode) == (I_IADDQ));
+       == (I_RMMOVQ) || (icode) == (I_MRMOVQ) || (icode) == (I_IADDQ) || 
+      (icode) == (I_JM));
 }
 
 long long gen_need_valC()
 {
     return ((icode) == (I_IRMOVQ) || (icode) == (I_RMMOVQ) || (icode) == 
       (I_MRMOVQ) || (icode) == (I_JMP) || (icode) == (I_CALL) || (icode)
-       == (I_IADDQ));
+       == (I_IADDQ) || (icode) == (I_JM));
 }
 
 long long gen_srcA()
@@ -49,9 +50,9 @@ long long gen_srcA()
 long long gen_srcB()
 {
     return (((icode) == (I_ALU) || (icode) == (I_RMMOVQ) || (icode) == 
-        (I_MRMOVQ) || (icode) == (I_IADDQ)) ? (rb) : ((icode) == (I_PUSHQ)
-         || (icode) == (I_POPQ) || (icode) == (I_CALL) || (icode) == 
-        (I_RET)) ? (REG_RSP) : (REG_NONE));
+        (I_MRMOVQ) || (icode) == (I_IADDQ) || (icode) == (I_JM)) ? (rb) : (
+        (icode) == (I_PUSHQ) || (icode) == (I_POPQ) || (icode) == (I_CALL)
+         || (icode) == (I_RET)) ? (REG_RSP) : (REG_NONE));
 }
 
 long long gen_dstE()
@@ -72,17 +73,18 @@ long long gen_aluA()
 {
     return (((icode) == (I_RRMOVQ) || (icode) == (I_ALU)) ? (vala) : (
         (icode) == (I_IRMOVQ) || (icode) == (I_RMMOVQ) || (icode) == 
-        (I_MRMOVQ) || (icode) == (I_IADDQ)) ? (valc) : ((icode) == (I_CALL)
-         || (icode) == (I_PUSHQ)) ? -8 : ((icode) == (I_RET) || (icode) == 
-        (I_POPQ)) ? 8 : 0);
+        (I_MRMOVQ) || (icode) == (I_IADDQ) || (icode) == (I_JM)) ? (valc)
+       : ((icode) == (I_CALL) || (icode) == (I_PUSHQ)) ? -8 : ((icode) == 
+        (I_RET) || (icode) == (I_POPQ)) ? 8 : 0);
 }
 
 long long gen_aluB()
 {
     return (((icode) == (I_RMMOVQ) || (icode) == (I_MRMOVQ) || (icode) == 
         (I_ALU) || (icode) == (I_CALL) || (icode) == (I_PUSHQ) || (icode)
-         == (I_RET) || (icode) == (I_POPQ) || (icode) == (I_IADDQ)) ? 
-      (valb) : ((icode) == (I_RRMOVQ) || (icode) == (I_IRMOVQ)) ? 0 : 0);
+         == (I_RET) || (icode) == (I_POPQ) || (icode) == (I_IADDQ) || 
+        (icode) == (I_JM)) ? (valb) : ((icode) == (I_RRMOVQ) || (icode) == 
+        (I_IRMOVQ)) ? 0 : 0);
 }
 
 long long gen_alufun()
@@ -110,8 +112,8 @@ long long gen_mem_write()
 long long gen_mem_addr()
 {
     return (((icode) == (I_RMMOVQ) || (icode) == (I_PUSHQ) || (icode) == 
-        (I_CALL) || (icode) == (I_MRMOVQ)) ? (vale) : ((icode) == (I_POPQ)
-         || (icode) == (I_RET)) ? (vala) : 0);
+        (I_CALL) || (icode) == (I_MRMOVQ) || (icode) == (I_JM)) ? (vale) : 
+      ((icode) == (I_POPQ) || (icode) == (I_RET)) ? (vala) : 0);
 }
 
 long long gen_mem_data()
@@ -129,6 +131,7 @@ long long gen_Stat()
 long long gen_new_pc()
 {
     return (((icode) == (I_CALL)) ? (valc) : (((icode) == (I_JMP)) & (cond)
-        ) ? (valc) : ((icode) == (I_RET)) ? (valm) : (valp));
+        ) ? (valc) : ((icode) == (I_RET) || (icode) == (I_JM)) ? (valm) : 
+      (valp));
 }
 
