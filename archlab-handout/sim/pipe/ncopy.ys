@@ -20,6 +20,12 @@ ncopy:
 	andq %rdx,%rdx		# len <= 0?
 	irmovq $7, %rbx
 	andq %rdx, %rbx		# len % 8
+	iaddq $-8, %rdx		# len -= 8
+	jl handle_remainder	# if so, goto handle_remainder:
+
+	andq %rbx, %rbx	# i = 0
+	jne Loop_8_registers	# if so, goto Loop_8_registers:
+	iaddq $8, %rdx
 	jle Done		# if so, goto Done:
 
 Loop_8_registers:	
@@ -76,7 +82,7 @@ judge_seventh_8_registers:
 judge_eighth_8_registers:
 	andq %rcx, %rcx		# val <= 0?
 	rmmovq %rcx, 56(%rsi)	# ...and store
-	jle Nops	# if so, goto Loop_8_registers:
+	jle Npos	# if so, goto Loop_8_registers:
 	iaddq $1, %rax		# count++
 
 
@@ -89,6 +95,27 @@ Npos:
 	iaddq $-8, %rdx		# len -= 8
 	andq %rdx,%rdx		# len > 0?
 	jg Loop_8_registers		# if so, goto Loop:
+
+
+
+
+
+handle_remainder:
+	iaddq $-1, %rbx		# len % 8 - 1
+	jl Done		# if so, goto Done:
+handle_remainder_loop:
+	mrmovq (%rdi), %r8
+	andq %r8, %r8		# val <= 0?
+	rmmovq %r8, (%rsi)	# ...and store it to dst
+	jle handle_remainder_next	# if so, goto handle_remainder_next:
+	iaddq $1, %rax		# count++
+handle_remainder_next:
+	iaddq $8, %rdi		# src += 1
+	iaddq $8, %rsi		# dst += 1
+	jmp handle_remainder
+
+
+
 ##################################################################
 # Do not modify the following section of code
 # Function epilogue.
