@@ -113,21 +113,80 @@ Npos:
 
 
 
+##################################################################
+# 优化后的余数处理（无循环，完全展开）
+# %rbx = len % 8（0 到 7）
+##################################################################
 handle_remainder:
-	iaddq $-1, %rbx		# len % 8 - 1
-	jl Done		# if so, goto Done:
-handle_remainder_loop:
-	mrmovq (%rdi), %r8
-	andq %r8, %r8		# val <= 0?
-	rmmovq %r8, (%rsi)	# ...and store it to dst
-	jle handle_remainder_next	# if so, goto handle_remainder_next:
-	iaddq $1, %rax		# count++
-handle_remainder_next:
-	iaddq $8, %rdi		# src += 1
-	iaddq $8, %rsi		# dst += 1
-	jmp handle_remainder
+    andq %rbx, %rbx      # 余数为 0？
+    je   Done
 
+    # 判断余数并跳转到对应标签
+    irmovq $1, %r10
+    subq %r10, %rbx
+    je   rem1
+    subq %r10, %rbx
+    je   rem2
+    subq %r10, %rbx
+    je   rem3
+    subq %r10, %rbx
+    je   rem4
+    subq %r10, %rbx
+    je   rem5
+    subq %r10, %rbx
+    je   rem6
+    # 剩余 7 个
+    jmp  rem7
 
+##################################################################
+# 每个 remX 标签处理对应数量的元素
+# 从高到低排列，实现 fall-through 自动执行更少的元素
+##################################################################
+rem7:
+    mrmovq 48(%rdi), %rcx
+    rmmovq %rcx, 48(%rsi)
+    andq %rcx, %rcx
+    jle   rem6
+    iaddq $1, %rax
+rem6:
+    mrmovq 40(%rdi), %rcx
+    rmmovq %rcx, 40(%rsi)
+    andq %rcx, %rcx
+    jle   rem5
+    iaddq $1, %rax
+rem5:
+    mrmovq 32(%rdi), %rcx
+    rmmovq %rcx, 32(%rsi)
+    andq %rcx, %rcx
+    jle   rem4
+    iaddq $1, %rax
+rem4:
+    mrmovq 24(%rdi), %rcx
+    rmmovq %rcx, 24(%rsi)
+    andq %rcx, %rcx
+    jle   rem3
+    iaddq $1, %rax
+rem3:
+    mrmovq 16(%rdi), %rcx
+    rmmovq %rcx, 16(%rsi)
+    andq %rcx, %rcx
+    jle   rem2
+    iaddq $1, %rax
+rem2:
+    mrmovq 8(%rdi), %rcx
+    rmmovq %rcx, 8(%rsi)
+    andq %rcx, %rcx
+    jle   rem1
+    iaddq $1, %rax
+rem1:
+    mrmovq (%rdi), %rcx
+    rmmovq %rcx, (%rsi)
+    andq %rcx, %rcx
+    jle   done_remainder
+    iaddq $1, %rax
+
+done_remainder:
+    jmp Done
 
 ##################################################################
 # Do not modify the following section of code
@@ -145,9 +204,9 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad 1
+	.quad -1
 	.quad -2
-	.quad -3
+	.quad 3
 	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
