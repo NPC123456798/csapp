@@ -29,17 +29,10 @@ ncopy:
 ##################################################################
 # You can modify this portion
 	# Loop header
-	xorq %rax,%rax		# count = 0;
-	andq %rdx,%rdx		# len <= 0?
-	irmovq $7, %rbx
-	andq %rdx, %rbx		# len % 8
+
+
 	iaddq $-8, %rdx		# len -= 8
 	jl handle_remainder	# if so, goto handle_remainder:
-
-	andq %rbx, %rbx	# i = 0
-	jne Loop_8_registers	# if so, goto Loop_8_registers:
-	iaddq $8, %rdx
-	jle Done		# if so, goto Done:
 
 Loop_8_registers:	
 	mrmovq (%rdi), %r8
@@ -106,51 +99,55 @@ Npos:
 	iaddq 64, %rdi		# src += 8
 	iaddq 64, %rsi		# dst += 8
 	iaddq $-8, %rdx		# len -= 8
-	andq %rdx,%rdx		# len > 0?
-	jg Loop_8_registers		# if so, goto Loop:
+
+	jge Loop_8_registers		# if so, goto Loop: use ge to make len % 8 == 0 case work
 
 
 
 
 handle_remainder:
-    andq %rbx, %rbx
-    je   Done
-
-    # 二叉树找余数
-    iaddq $-4, %rbx        # 先减 4
-    jge  case_ge4
-	
-    # 余数 0-3
-    iaddq $2, %rbx        # 直接减 2
-    jge  case_ge2_0_3
-	mrmovq (%rdi), %r8
-    jmp   rem1
     
-case_ge2_0_3:
-    iaddq $-1, %rbx
+    # 二叉树找余数
+    iaddq $4, %rdx        # 先减 4
+    jl  case_l_0_3
+
+    
+	
+case_ge4:
+    iaddq $-2, %rdx
+    jge  case_ge6
+    iaddq $1, %rdx
+	mrmovq 32(%rdi), %r8
+    je   rem5
+	mrmovq 24(%rdi), %r8
+    jmp  rem4
+    
+case_l_0_3:
+	iaddq $2, %rdx        # 直接减 2
+	jl  case_l_0_1
+    iaddq $-1, %rdx
 	mrmovq 16(%rdi), %r8
     je   rem3
 	mrmovq 8(%rdi), %r8
     jmp  rem2
 
-case_ge4:
-    iaddq $-2, %rbx
-    jge  case_ge6
-    iaddq $1, %rbx
-	mrmovq 32(%rdi), %r8
-    je   rem5
-	mrmovq 24(%rdi), %r8
-    jmp  rem4
+case_l_0_1:
+	iaddq $1, %rdx
+	mrmovq (%rdi), %r8
+	je   rem1
+	jmp  rem0
+
 
 case_ge6:
-    iaddq $-1, %rbx
-	mrmovq 48(%rdi), %r8
-    je   rem7
 	mrmovq 40(%rdi), %r8
-    jmp  rem6
-##################################################################
-# fall-through 结构：大数字先执行，自然落到小数字
-##################################################################
+    je  rem6
+   
+	mrmovq 48(%rdi), %r8
+    jmp   rem7
+
+
+
+# fall-through
 rem7:
     andq %r8, %r8
     rmmovq %r8, 48(%rsi)
@@ -211,65 +208,65 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad 1
-	.quad 2
-	.quad 3
+	.quad -1
+	.quad -2
+	.quad -3
 	.quad -4
-	.quad -5
-	.quad 6
+	.quad 5
+	.quad -6
 	.quad -7
 	.quad 8
 	.quad 9
 	.quad 10
-	.quad 11
-	.quad -12
+	.quad -11
+	.quad 12
 	.quad 13
-	.quad -14
-	.quad 15
+	.quad 14
+	.quad -15
 	.quad 16
-	.quad 17
+	.quad -17
 	.quad 18
-	.quad 19
-	.quad -20
-	.quad 21
+	.quad -19
+	.quad 20
+	.quad -21
 	.quad 22
-	.quad -23
-	.quad 24
+	.quad 23
+	.quad -24
 	.quad -25
 	.quad 26
-	.quad -27
+	.quad 27
 	.quad -28
 	.quad -29
-	.quad -30
+	.quad 30
 	.quad 31
-	.quad -32
+	.quad 32
 	.quad 33
-	.quad 34
+	.quad -34
 	.quad 35
 	.quad 36
 	.quad -37
-	.quad -38
-	.quad -39
+	.quad 38
+	.quad 39
 	.quad 40
 	.quad -41
-	.quad 42
+	.quad -42
 	.quad 43
 	.quad -44
-	.quad -45
-	.quad -46
+	.quad 45
+	.quad 46
 	.quad 47
 	.quad 48
 	.quad -49
 	.quad 50
-	.quad -51
+	.quad 51
 	.quad -52
-	.quad -53
+	.quad 53
 	.quad -54
 	.quad -55
-	.quad 56
+	.quad -56
 	.quad -57
 	.quad -58
-	.quad 59
+	.quad -59
 	.quad -60
 	.quad -61
 	.quad -62
