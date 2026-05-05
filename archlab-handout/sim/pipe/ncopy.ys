@@ -18,24 +18,77 @@ ncopy:
 	# Loop header
 	xorq %rax,%rax		# count = 0;
 	andq %rdx,%rdx		# len <= 0?
-	irmovq $1, %r11
+	irmovq $7, %rbx
+	andq %rdx, %rbx		# len % 8
 	jle Done		# if so, goto Done:
 
-Loop:	
-	mrmovq (%rdi), %r10	# read val from src...
-	rmmovq %r10, (%rsi)	# ...and store it to dst
+Loop_8_registers:	
+	mrmovq (%rdi), %r8
+    mrmovq 8(%rdi), %r9
+    mrmovq 16(%rdi), %r10
+    mrmovq 24(%rdi), %r11
+    mrmovq 32(%rdi), %r12
+    mrmovq 40(%rdi), %r13
+    mrmovq 48(%rdi), %r14
+    mrmovq 56(%rdi), %rcx
+
+
+judge_first_8_registers:
+	andq %r8, %r8		# val <= 0?
+	rmmovq %r8, (%rsi)	# ...and store it to dst
+	jle judge_second_8_registers	# if so, goto judge_second_8_registers:
+	iaddq $1, %rax		# count++
+
+judge_second_8_registers:
+	andq %r9, %r9		# val <= 0?
+	rmmovq %r9, 8(%rsi)	# ...and store
+	jle judge_third_8_registers	# if so, goto judge_third_8_registers:
+	iaddq $1, %rax		# count++
+
+judge_third_8_registers:
 	andq %r10, %r10		# val <= 0?
-	jle Npos		# if so, goto Npos:
-	
-	addq %r11, %rax		# count++
+	rmmovq %r10, 16(%rsi)	# ...and store
+	jle judge_fourth_8_registers	# if so, goto judge_fourth_8_registers:
+	iaddq $1, %rax		# count++
+
+judge_fourth_8_registers:
+	andq %r11, %r11		# val <= 0?
+	rmmovq %r11, 24(%rsi)	# ...and store
+	jle judge_fifth_8_registers	# if so, goto judge_fifth_8_registers:
+	iaddq $1, %rax		# count++
+
+judge_fifth_8_registers:
+	andq %r12, %r12		# val <= 0?
+	rmmovq %r12, 32(%rsi)	# ...and store
+	jle judge_sixth_8_registers	# if so, goto judge_sixth_8_registers:
+	iaddq $1, %rax		# count++
+
+judge_sixth_8_registers:
+	andq %r13, %r13		# val <= 0?
+	rmmovq %r13, 40(%rsi)	# ...and store		
+	jle judge_seventh_8_registers	# if so, goto judge_seventh_8_registers:
+	iaddq $1, %rax		# count++
+judge_seventh_8_registers:
+	andq %r14, %r14		# val <= 0?
+	rmmovq %r14, 48(%rsi)	# ...and store
+	jle judge_eighth_8_registers	# if so, goto judge_eighth_8_registers:
+	iaddq $1, %rax		# count++
+judge_eighth_8_registers:
+	andq %rcx, %rcx		# val <= 0?
+	rmmovq %rcx, 56(%rsi)	# ...and store
+	jle Nops	# if so, goto Loop_8_registers:
+	iaddq $1, %rax		# count++
+
+
+
+
 Npos:	
-	irmovq $1, %r10
-	subq %r10, %rdx		# len--
-	irmovq $8, %r10
-	addq %r10, %rdi		# src++
-	addq %r10, %rsi		# dst++
+	
+	iaddq 64, %rdi		# src += 8
+	iaddq 64, %rsi		# dst += 8
+	iaddq $-8, %rdx		# len -= 8
 	andq %rdx,%rdx		# len > 0?
-	jg Loop			# if so, goto Loop:
+	jg Loop_8_registers		# if so, goto Loop:
 ##################################################################
 # Do not modify the following section of code
 # Function epilogue.
