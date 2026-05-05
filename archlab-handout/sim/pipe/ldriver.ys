@@ -112,80 +112,87 @@ Npos:
 
 
 
-
-##################################################################
-# 优化后的余数处理（无循环，完全展开）
-# %rbx = len % 8（0 到 7）
-##################################################################
 handle_remainder:
-    andq %rbx, %rbx      # 余数为 0？
+    andq %rbx, %rbx
     je   Done
 
-    # 判断余数并跳转到对应标签
-    irmovq $1, %r10
-    subq %r10, %rbx
-    je   rem1
-    subq %r10, %rbx
-    je   rem2
-    subq %r10, %rbx
+    # 二叉树找余数
+    iaddq $-4, %rbx        # 先减 4
+    jge  case_ge4
+	
+    # 余数 0-3
+    iaddq $2, %rbx        # 直接减 2
+    jge  case_ge2_0_3
+	mrmovq (%rdi), %r8
+    jmp   rem1
+    
+case_ge2_0_3:
+    iaddq $-1, %rbx
+	mrmovq 16(%rdi), %r8
     je   rem3
-    subq %r10, %rbx
-    je   rem4
-    subq %r10, %rbx
-    je   rem5
-    subq %r10, %rbx
-    je   rem6
-    # 剩余 7 个
-    jmp  rem7
+	mrmovq 8(%rdi), %r8
+    jmp  rem2
 
+case_ge4:
+    iaddq $-2, %rbx
+    jge  case_ge6
+    iaddq $1, %rbx
+	mrmovq 32(%rdi), %r8
+    je   rem5
+	mrmovq 24(%rdi), %r8
+    jmp  rem4
+
+case_ge6:
+    iaddq $-1, %rbx
+	mrmovq 48(%rdi), %r8
+    je   rem7
+	mrmovq 40(%rdi), %r8
+    jmp  rem6
 ##################################################################
-# 每个 remX 标签处理对应数量的元素
-# 从高到低排列，实现 fall-through 自动执行更少的元素
+# fall-through 结构：大数字先执行，自然落到小数字
 ##################################################################
 rem7:
-    mrmovq 48(%rdi), %rcx
-    rmmovq %rcx, 48(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 48(%rsi)
+    mrmovq 40(%rdi), %r8
     jle   rem6
     iaddq $1, %rax
 rem6:
-    mrmovq 40(%rdi), %rcx
-    rmmovq %rcx, 40(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 40(%rsi)
+    mrmovq 32(%rdi), %r8
     jle   rem5
     iaddq $1, %rax
 rem5:
-    mrmovq 32(%rdi), %rcx
-    rmmovq %rcx, 32(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 32(%rsi)
+    mrmovq 24(%rdi), %r8
     jle   rem4
     iaddq $1, %rax
 rem4:
-    mrmovq 24(%rdi), %rcx
-    rmmovq %rcx, 24(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 24(%rsi)
+    mrmovq 16(%rdi), %r8
     jle   rem3
     iaddq $1, %rax
 rem3:
-    mrmovq 16(%rdi), %rcx
-    rmmovq %rcx, 16(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 16(%rsi)
+    mrmovq 8(%rdi), %r8
     jle   rem2
     iaddq $1, %rax
 rem2:
-    mrmovq 8(%rdi), %rcx
-    rmmovq %rcx, 8(%rsi)
-    andq %rcx, %rcx
+    andq %r8, %r8
+    rmmovq %r8, 8(%rsi)
+    mrmovq (%rdi), %r8
     jle   rem1
     iaddq $1, %rax
 rem1:
-    mrmovq (%rdi), %rcx
-    rmmovq %rcx, (%rsi)
-    andq %rcx, %rcx
-    jle   done_remainder
+    andq %r8, %r8
+    rmmovq %r8, (%rsi)
+    jle   rem0
     iaddq $1, %rax
-
-done_remainder:
+rem0:
     jmp Done
 
 ##################################################################
@@ -207,12 +214,12 @@ src:
 	.quad 1
 	.quad 2
 	.quad 3
-	.quad 4
-	.quad 5
-	.quad -6
+	.quad -4
+	.quad -5
+	.quad 6
 	.quad -7
-	.quad -8
-	.quad -9
+	.quad 8
+	.quad 9
 	.quad 10
 	.quad 11
 	.quad -12
@@ -220,51 +227,51 @@ src:
 	.quad -14
 	.quad 15
 	.quad 16
-	.quad -17
-	.quad -18
-	.quad -19
-	.quad 20
-	.quad -21
-	.quad -22
+	.quad 17
+	.quad 18
+	.quad 19
+	.quad -20
+	.quad 21
+	.quad 22
 	.quad -23
-	.quad -24
-	.quad 25
+	.quad 24
+	.quad -25
 	.quad 26
 	.quad -27
-	.quad 28
+	.quad -28
 	.quad -29
 	.quad -30
 	.quad 31
-	.quad 32
-	.quad -33
-	.quad -34
-	.quad -35
+	.quad -32
+	.quad 33
+	.quad 34
+	.quad 35
 	.quad 36
-	.quad 37
-	.quad 38
-	.quad 39
+	.quad -37
+	.quad -38
+	.quad -39
 	.quad 40
 	.quad -41
 	.quad 42
-	.quad -43
-	.quad 44
+	.quad 43
+	.quad -44
 	.quad -45
-	.quad 46
-	.quad -47
+	.quad -46
+	.quad 47
 	.quad 48
 	.quad -49
 	.quad 50
-	.quad 51
+	.quad -51
 	.quad -52
 	.quad -53
 	.quad -54
 	.quad -55
-	.quad -56
+	.quad 56
 	.quad -57
-	.quad 58
+	.quad -58
 	.quad 59
-	.quad 60
-	.quad 61
+	.quad -60
+	.quad -61
 	.quad -62
 	.quad -63
 	.quad 0xbcdefa # This shouldn't get moved
