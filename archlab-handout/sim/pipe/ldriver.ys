@@ -11,6 +11,7 @@ main:	irmovq Stack, %rsp  	# Set up stack pointer
 	call ncopy		 
 	halt			# should halt with num nonzeros in %rax
 StartFun:
+# NPC123456798
 #/* $begin ncopy-ys */
 ##################################################################
 # ncopy.ys - Copy a src block of len words to dst.
@@ -46,49 +47,55 @@ Loop_8_registers:
 
 
 judge_first_8_registers:
-	andq %r8, %r8		# val <= 0?
+    rmmovq %r9, 8(%rsi)	# ...and store
+	xorq %r8, %r9		# val <= 0?
 	rmmovq %r8, (%rsi)	# ...and store it to dst
-	jle judge_second_8_registers	# if so, goto judge_second_8_registers:
-	iaddq $1, %rax		# count++
+	jl judge_second_8_registers	# if so, goto judge_second_8_registers:
+    andq %r8, %r8		
+    jle judge_third_8_registers	# if so, goto judge_third_8_registers:
+	iaddq $2, %rax		# count++
+    jmp judge_third_8_registers	# goto judge_third_8_registers:
 
 judge_second_8_registers:
-	andq %r9, %r9		# val <= 0?
-	rmmovq %r9, 8(%rsi)	# ...and store
-	jle judge_third_8_registers	# if so, goto judge_third_8_registers:
+	
 	iaddq $1, %rax		# count++
 
 judge_third_8_registers:
-	andq %r10, %r10		# val <= 0?
+    rmmovq %r11, 24(%rsi)	# ...and store
+	xorq %r10, %r11		# val <= 0?
 	rmmovq %r10, 16(%rsi)	# ...and store
-	jle judge_fourth_8_registers	# if so, goto judge_fourth_8_registers:
-	iaddq $1, %rax		# count++
+	jl judge_fourth_8_registers	# if so, goto judge_fourth_8_registers:
+    andq %r10, %r10		
+    jle judge_fifth_8_registers	# if so, goto judge_fifth_8_registers:
+	iaddq $2, %rax		# count++
+    jmp judge_fifth_8_registers	# goto judge_fifth_8_registers:
 
 judge_fourth_8_registers:
-	andq %r11, %r11		# val <= 0?
-	rmmovq %r11, 24(%rsi)	# ...and store
-	jle judge_fifth_8_registers	# if so, goto judge_fifth_8_registers:
 	iaddq $1, %rax		# count++
 
 judge_fifth_8_registers:
-	andq %r12, %r12		# val <= 0?
+	rmmovq %r13, 40(%rsi)	# ...and store		
+	xorq %r12, %r13		# val <= 0?
 	rmmovq %r12, 32(%rsi)	# ...and store
-	jle judge_sixth_8_registers	# if so, goto judge_sixth_8_registers:
-	iaddq $1, %rax		# count++
+	jl judge_sixth_8_registers	# if so, goto judge_sixth_8_registers:
+    andq %r12, %r12		
+    jle judge_seventh_8_registers	# if so, goto judge_seventh_8_registers:
+	iaddq $2, %rax		# count++
+    jmp judge_seventh_8_registers	# goto judge_seventh_8_registers:
 
 judge_sixth_8_registers:
-	andq %r13, %r13		# val <= 0?
-	rmmovq %r13, 40(%rsi)	# ...and store		
-	jle judge_seventh_8_registers	# if so, goto judge_seventh_8_registers:
+
 	iaddq $1, %rax		# count++
 judge_seventh_8_registers:
-	andq %r14, %r14		# val <= 0?
-	rmmovq %r14, 48(%rsi)	# ...and store
-	jle judge_eighth_8_registers	# if so, goto judge_eighth_8_registers:
-	iaddq $1, %rax		# count++
-judge_eighth_8_registers:
-	andq %rcx, %rcx		# val <= 0?
 	rmmovq %rcx, 56(%rsi)	# ...and store
-	jle Npos	# if so, goto Loop_8_registers:
+	xorq %r14, %rcx		# val <= 0?
+	rmmovq %r14, 48(%rsi)	# ...and store
+	jl judge_eighth_8_registers	# if so, goto judge_eighth_8_registers:
+    andq %r14, %r14		
+    jle Npos	# if so, goto Done:
+	iaddq $2, %rax		# count++
+    jmp Npos	# goto Done:
+judge_eighth_8_registers:
 	iaddq $1, %rax		# count++
 
 
@@ -208,63 +215,63 @@ EndFun:
 	.align 8
 src:
 	.quad 1
-	.quad 2
-	.quad -3
-	.quad -4
-	.quad -5
-	.quad -6
+	.quad -2
+	.quad 3
+	.quad 4
+	.quad 5
+	.quad 6
 	.quad 7
-	.quad 8
-	.quad 9
+	.quad -8
+	.quad -9
 	.quad 10
 	.quad 11
 	.quad -12
-	.quad -13
+	.quad 13
 	.quad 14
-	.quad -15
+	.quad 15
 	.quad -16
 	.quad -17
-	.quad 18
-	.quad 19
+	.quad -18
+	.quad -19
 	.quad 20
-	.quad 21
-	.quad 22
-	.quad 23
+	.quad -21
+	.quad -22
+	.quad -23
 	.quad 24
-	.quad 25
+	.quad -25
 	.quad 26
 	.quad 27
-	.quad -28
-	.quad -29
+	.quad 28
+	.quad 29
 	.quad 30
-	.quad 31
-	.quad 32
+	.quad -31
+	.quad -32
 	.quad -33
 	.quad 34
-	.quad 35
-	.quad -36
-	.quad 37
-	.quad 38
+	.quad -35
+	.quad 36
+	.quad -37
+	.quad -38
 	.quad -39
-	.quad 40
-	.quad 41
-	.quad 42
-	.quad 43
-	.quad 44
+	.quad -40
+	.quad -41
+	.quad -42
+	.quad -43
+	.quad -44
 	.quad 45
-	.quad -46
-	.quad -47
+	.quad 46
+	.quad 47
 	.quad -48
-	.quad -49
+	.quad 49
 	.quad -50
-	.quad -51
-	.quad -52
-	.quad -53
-	.quad -54
-	.quad -55
-	.quad -56
+	.quad 51
+	.quad 52
+	.quad 53
+	.quad 54
+	.quad 55
+	.quad 56
 	.quad -57
-	.quad -58
+	.quad 58
 	.quad -59
 	.quad -60
 	.quad -61

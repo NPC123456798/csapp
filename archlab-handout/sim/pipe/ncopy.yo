@@ -1,3 +1,4 @@
+                            | # NPC123456798
                             | #/* $begin ncopy-ys */
                             | ##################################################################
                             | # ncopy.ys - Copy a src block of len words to dst.
@@ -16,178 +17,174 @@
                             | ##################################################################
                             | # You can modify this portion
                             | 	# Loop header
-0x000: 6300                 | 	xorq %rax,%rax		# count = 0;
-0x002: 6222                 | 	andq %rdx,%rdx		# len <= 0?
-0x004: 30f30700000000000000 | 	irmovq $7, %rbx
-0x00e: 6223                 | 	andq %rdx, %rbx		# len % 8
-0x010: c0f2f8ffffffffffffff | 	iaddq $-8, %rdx		# len -= 8
-0x01a: 72b201000000000000   | 	jl handle_remainder	# if so, goto handle_remainder:
-                            | 
-0x023: 6233                 | 	andq %rbx, %rbx	# i = 0
-0x025: 744100000000000000   | 	jne Loop_8_registers	# if so, goto Loop_8_registers:
-0x02e: c0f20800000000000000 | 	iaddq $8, %rdx
-0x038: 71b703000000000000   | 	jle Done		# if so, goto Done:
-                            | 
-0x041:                      | Loop_8_registers:	
-0x041: 50870000000000000000 | 	mrmovq (%rdi), %r8
-0x04b: 50970800000000000000 |     mrmovq 8(%rdi), %r9
-0x055: 50a71000000000000000 |     mrmovq 16(%rdi), %r10
-0x05f: 50b71800000000000000 |     mrmovq 24(%rdi), %r11
-0x069: 50c72000000000000000 |     mrmovq 32(%rdi), %r12
-0x073: 50d72800000000000000 |     mrmovq 40(%rdi), %r13
-0x07d: 50e73000000000000000 |     mrmovq 48(%rdi), %r14
-0x087: 50173800000000000000 |     mrmovq 56(%rdi), %rcx
                             | 
                             | 
-0x091:                      | judge_first_8_registers:
-0x091: 6288                 | 	andq %r8, %r8		# val <= 0?
-0x093: 40860000000000000000 | 	rmmovq %r8, (%rsi)	# ...and store it to dst
-0x09d: 71b000000000000000   | 	jle judge_second_8_registers	# if so, goto judge_second_8_registers:
-0x0a6: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x000: c0f2f8ffffffffffffff | 	iaddq $-8, %rdx		# len -= 8
+0x00a: 728201000000000000   | 	jl handle_remainder	# if so, goto handle_remainder:
                             | 
-0x0b0:                      | judge_second_8_registers:
-0x0b0: 6299                 | 	andq %r9, %r9		# val <= 0?
-0x0b2: 40960800000000000000 | 	rmmovq %r9, 8(%rsi)	# ...and store
-0x0bc: 71cf00000000000000   | 	jle judge_third_8_registers	# if so, goto judge_third_8_registers:
-0x0c5: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x013:                      | Loop_8_registers:	
+0x013: 50870000000000000000 | 	mrmovq (%rdi), %r8
+0x01d: 50970800000000000000 |     mrmovq 8(%rdi), %r9
+0x027: 50a71000000000000000 |     mrmovq 16(%rdi), %r10
+0x031: 50b71800000000000000 |     mrmovq 24(%rdi), %r11
+0x03b: 50c72000000000000000 |     mrmovq 32(%rdi), %r12
+0x045: 50d72800000000000000 |     mrmovq 40(%rdi), %r13
+0x04f: 50e73000000000000000 |     mrmovq 48(%rdi), %r14
+0x059: 50173800000000000000 |     mrmovq 56(%rdi), %rcx
                             | 
-0x0cf:                      | judge_third_8_registers:
-0x0cf: 62aa                 | 	andq %r10, %r10		# val <= 0?
-0x0d1: 40a61000000000000000 | 	rmmovq %r10, 16(%rsi)	# ...and store
-0x0db: 71ee00000000000000   | 	jle judge_fourth_8_registers	# if so, goto judge_fourth_8_registers:
-0x0e4: c0f00100000000000000 | 	iaddq $1, %rax		# count++
                             | 
-0x0ee:                      | judge_fourth_8_registers:
-0x0ee: 62bb                 | 	andq %r11, %r11		# val <= 0?
-0x0f0: 40b61800000000000000 | 	rmmovq %r11, 24(%rsi)	# ...and store
-0x0fa: 710d01000000000000   | 	jle judge_fifth_8_registers	# if so, goto judge_fifth_8_registers:
-0x103: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x063:                      | judge_first_8_registers:
+0x063: 6288                 | 	andq %r8, %r8		# val <= 0?
+0x065: 40860000000000000000 | 	rmmovq %r8, (%rsi)	# ...and store it to dst
+0x06f: 718200000000000000   | 	jle judge_second_8_registers	# if so, goto judge_second_8_registers:
+0x078: c0f00100000000000000 | 	iaddq $1, %rax		# count++
                             | 
-0x10d:                      | judge_fifth_8_registers:
-0x10d: 62cc                 | 	andq %r12, %r12		# val <= 0?
-0x10f: 40c62000000000000000 | 	rmmovq %r12, 32(%rsi)	# ...and store
-0x119: 712c01000000000000   | 	jle judge_sixth_8_registers	# if so, goto judge_sixth_8_registers:
-0x122: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x082:                      | judge_second_8_registers:
+0x082: 6299                 | 	andq %r9, %r9		# val <= 0?
+0x084: 40960800000000000000 | 	rmmovq %r9, 8(%rsi)	# ...and store
+0x08e: 71a100000000000000   | 	jle judge_third_8_registers	# if so, goto judge_third_8_registers:
+0x097: c0f00100000000000000 | 	iaddq $1, %rax		# count++
                             | 
-0x12c:                      | judge_sixth_8_registers:
-0x12c: 62dd                 | 	andq %r13, %r13		# val <= 0?
-0x12e: 40d62800000000000000 | 	rmmovq %r13, 40(%rsi)	# ...and store		
-0x138: 714b01000000000000   | 	jle judge_seventh_8_registers	# if so, goto judge_seventh_8_registers:
-0x141: c0f00100000000000000 | 	iaddq $1, %rax		# count++
-0x14b:                      | judge_seventh_8_registers:
-0x14b: 62ee                 | 	andq %r14, %r14		# val <= 0?
-0x14d: 40e63000000000000000 | 	rmmovq %r14, 48(%rsi)	# ...and store
-0x157: 716a01000000000000   | 	jle judge_eighth_8_registers	# if so, goto judge_eighth_8_registers:
-0x160: c0f00100000000000000 | 	iaddq $1, %rax		# count++
-0x16a:                      | judge_eighth_8_registers:
-0x16a: 6211                 | 	andq %rcx, %rcx		# val <= 0?
-0x16c: 40163800000000000000 | 	rmmovq %rcx, 56(%rsi)	# ...and store
-0x176: 718901000000000000   | 	jle Npos	# if so, goto Loop_8_registers:
-0x17f: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x0a1:                      | judge_third_8_registers:
+0x0a1: 62aa                 | 	andq %r10, %r10		# val <= 0?
+0x0a3: 40a61000000000000000 | 	rmmovq %r10, 16(%rsi)	# ...and store
+0x0ad: 71c000000000000000   | 	jle judge_fourth_8_registers	# if so, goto judge_fourth_8_registers:
+0x0b6: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+                            | 
+0x0c0:                      | judge_fourth_8_registers:
+0x0c0: 62bb                 | 	andq %r11, %r11		# val <= 0?
+0x0c2: 40b61800000000000000 | 	rmmovq %r11, 24(%rsi)	# ...and store
+0x0cc: 71df00000000000000   | 	jle judge_fifth_8_registers	# if so, goto judge_fifth_8_registers:
+0x0d5: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+                            | 
+0x0df:                      | judge_fifth_8_registers:
+0x0df: 62cc                 | 	andq %r12, %r12		# val <= 0?
+0x0e1: 40c62000000000000000 | 	rmmovq %r12, 32(%rsi)	# ...and store
+0x0eb: 71fe00000000000000   | 	jle judge_sixth_8_registers	# if so, goto judge_sixth_8_registers:
+0x0f4: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+                            | 
+0x0fe:                      | judge_sixth_8_registers:
+0x0fe: 62dd                 | 	andq %r13, %r13		# val <= 0?
+0x100: 40d62800000000000000 | 	rmmovq %r13, 40(%rsi)	# ...and store		
+0x10a: 711d01000000000000   | 	jle judge_seventh_8_registers	# if so, goto judge_seventh_8_registers:
+0x113: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x11d:                      | judge_seventh_8_registers:
+0x11d: 62ee                 | 	andq %r14, %r14		# val <= 0?
+0x11f: 40e63000000000000000 | 	rmmovq %r14, 48(%rsi)	# ...and store
+0x129: 713c01000000000000   | 	jle judge_eighth_8_registers	# if so, goto judge_eighth_8_registers:
+0x132: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x13c:                      | judge_eighth_8_registers:
+0x13c: 6211                 | 	andq %rcx, %rcx		# val <= 0?
+0x13e: 40163800000000000000 | 	rmmovq %rcx, 56(%rsi)	# ...and store
+0x148: 715b01000000000000   | 	jle Npos	# if so, goto Loop_8_registers:
+0x151: c0f00100000000000000 | 	iaddq $1, %rax		# count++
                             | 
                             | 
                             | 
                             | 
-0x189:                      | Npos:	
+0x15b:                      | Npos:	
                             | 	
-0x189: c0f74000000000000000 | 	iaddq 64, %rdi		# src += 8
-0x193: c0f64000000000000000 | 	iaddq 64, %rsi		# dst += 8
-0x19d: c0f2f8ffffffffffffff | 	iaddq $-8, %rdx		# len -= 8
-0x1a7: 6222                 | 	andq %rdx,%rdx		# len > 0?
-0x1a9: 764100000000000000   | 	jg Loop_8_registers		# if so, goto Loop:
+0x15b: c0f74000000000000000 | 	iaddq 64, %rdi		# src += 8
+0x165: c0f64000000000000000 | 	iaddq 64, %rsi		# dst += 8
+0x16f: c0f2f8ffffffffffffff | 	iaddq $-8, %rdx		# len -= 8
+                            | 
+0x179: 751300000000000000   | 	jge Loop_8_registers		# if so, goto Loop: use ge to make len % 8 == 0 case work
                             | 
                             | 
                             | 
                             | 
-0x1b2:                      | handle_remainder:
-0x1b2: 6233                 |     andq %rbx, %rbx
-0x1b4: 73b703000000000000   |     je   Done
-                            | 
-                            |     # 二叉树找余数
-0x1bd: c0f3fcffffffffffffff |     iaddq $-4, %rbx        # 先减 4
-0x1c7: 752602000000000000   |     jge  case_ge4
-                            | 	
-                            |     # 余数 0-3
-0x1d0: c0f30200000000000000 |     iaddq $2, %rbx        # 直接减 2
-0x1da: 75f601000000000000   |     jge  case_ge2_0_3
-0x1e3: 50870000000000000000 | 	mrmovq (%rdi), %r8
-0x1ed: 708f03000000000000   |     jmp   rem1
+0x182:                      | handle_remainder:
                             |     
-0x1f6:                      | case_ge2_0_3:
-0x1f6: c0f3ffffffffffffffff |     iaddq $-1, %rbx
-0x200: 50871000000000000000 | 	mrmovq 16(%rdi), %r8
-0x20a: 733d03000000000000   |     je   rem3
-0x213: 50870800000000000000 | 	mrmovq 8(%rdi), %r8
-0x21d: 706603000000000000   |     jmp  rem2
+                            |     # 二叉树找余数
+0x182: c0f20400000000000000 |     iaddq $4, %rdx        # 先减 4
+0x18c: 72d801000000000000   |     jl  case_l_0_3
                             | 
-0x226:                      | case_ge4:
-0x226: c0f3feffffffffffffff |     iaddq $-2, %rbx
-0x230: 756902000000000000   |     jge  case_ge6
-0x239: c0f30100000000000000 |     iaddq $1, %rbx
-0x243: 50872000000000000000 | 	mrmovq 32(%rdi), %r8
-0x24d: 73eb02000000000000   |     je   rem5
-0x256: 50871800000000000000 | 	mrmovq 24(%rdi), %r8
-0x260: 701403000000000000   |     jmp  rem4
+                            |     
+                            | 	
+0x195:                      | case_ge4:
+0x195: c0f2feffffffffffffff |     iaddq $-2, %rdx
+0x19f: 752f02000000000000   |     jge  case_ge6
+0x1a8: c0f20100000000000000 |     iaddq $1, %rdx
+0x1b2: 50872000000000000000 | 	mrmovq 32(%rdi), %r8
+0x1bc: 73a702000000000000   |     je   rem5
+0x1c5: 50871800000000000000 | 	mrmovq 24(%rdi), %r8
+0x1cf: 70d002000000000000   |     jmp  rem4
+                            |     
+0x1d8:                      | case_l_0_3:
+0x1d8: c0f20200000000000000 | 	iaddq $2, %rdx        # 直接减 2
+0x1e2: 721102000000000000   | 	jl  case_l_0_1
+                            |     
+0x1eb: 50870800000000000000 | 	mrmovq 8(%rdi), %r8
+0x1f5: 732203000000000000   |     je  rem2
+0x1fe: 50871000000000000000 | 	mrmovq 16(%rdi), %r8
+0x208: 70f902000000000000   |     jmp   rem3
                             | 
-0x269:                      | case_ge6:
-0x269: c0f3ffffffffffffffff |     iaddq $-1, %rbx
-0x273: 50873000000000000000 | 	mrmovq 48(%rdi), %r8
-0x27d: 739902000000000000   |     je   rem7
-0x286: 50872800000000000000 | 	mrmovq 40(%rdi), %r8
-0x290: 70c202000000000000   |     jmp  rem6
-                            | ##################################################################
-                            | # fall-through 结构：大数字先执行，自然落到小数字
-                            | ##################################################################
-0x299:                      | rem7:
-0x299: 6288                 |     andq %r8, %r8
-0x29b: 40863000000000000000 |     rmmovq %r8, 48(%rsi)
-0x2a5: 50872800000000000000 |     mrmovq 40(%rdi), %r8
-0x2af: 71c202000000000000   |     jle   rem6
-0x2b8: c0f00100000000000000 |     iaddq $1, %rax
-0x2c2:                      | rem6:
-0x2c2: 6288                 |     andq %r8, %r8
-0x2c4: 40862800000000000000 |     rmmovq %r8, 40(%rsi)
-0x2ce: 50872000000000000000 |     mrmovq 32(%rdi), %r8
-0x2d8: 71eb02000000000000   |     jle   rem5
-0x2e1: c0f00100000000000000 |     iaddq $1, %rax
-0x2eb:                      | rem5:
-0x2eb: 6288                 |     andq %r8, %r8
-0x2ed: 40862000000000000000 |     rmmovq %r8, 32(%rsi)
-0x2f7: 50871800000000000000 |     mrmovq 24(%rdi), %r8
-0x301: 711403000000000000   |     jle   rem4
-0x30a: c0f00100000000000000 |     iaddq $1, %rax
-0x314:                      | rem4:
-0x314: 6288                 |     andq %r8, %r8
-0x316: 40861800000000000000 |     rmmovq %r8, 24(%rsi)
-0x320: 50871000000000000000 |     mrmovq 16(%rdi), %r8
-0x32a: 713d03000000000000   |     jle   rem3
-0x333: c0f00100000000000000 |     iaddq $1, %rax
-0x33d:                      | rem3:
-0x33d: 6288                 |     andq %r8, %r8
-0x33f: 40861000000000000000 |     rmmovq %r8, 16(%rsi)
-0x349: 50870800000000000000 |     mrmovq 8(%rdi), %r8
-0x353: 716603000000000000   |     jle   rem2
-0x35c: c0f00100000000000000 |     iaddq $1, %rax
-0x366:                      | rem2:
-0x366: 6288                 |     andq %r8, %r8
-0x368: 40860800000000000000 |     rmmovq %r8, 8(%rsi)
-0x372: 50870000000000000000 |     mrmovq (%rdi), %r8
-0x37c: 718f03000000000000   |     jle   rem1
-0x385: c0f00100000000000000 |     iaddq $1, %rax
-0x38f:                      | rem1:
-0x38f: 6288                 |     andq %r8, %r8
-0x391: 40860000000000000000 |     rmmovq %r8, (%rsi)
-0x39b: 71ae03000000000000   |     jle   rem0
-0x3a4: c0f00100000000000000 |     iaddq $1, %rax
-0x3ae:                      | rem0:
-0x3ae: 70b703000000000000   |     jmp Done
+0x211:                      | case_l_0_1:
+0x211: c0f20100000000000000 | 	iaddq $1, %rdx
+0x21b: 50870000000000000000 | 	mrmovq (%rdi), %r8
+0x225: 734b03000000000000   | 	je   rem1
+0x22e: 90                   | 	ret
+                            | 
+                            | 
+0x22f:                      | case_ge6:
+0x22f: 50872800000000000000 | 	mrmovq 40(%rdi), %r8
+0x239: 737e02000000000000   |     je  rem6
+                            |    
+0x242: 50873000000000000000 | 	mrmovq 48(%rdi), %r8
+0x24c: 705502000000000000   |     jmp   rem7
+                            | 
+                            | 
+                            | 
+                            | # fall-through
+0x255:                      | rem7:
+0x255: 6288                 |     andq %r8, %r8
+0x257: 40863000000000000000 |     rmmovq %r8, 48(%rsi)
+0x261: 50872800000000000000 |     mrmovq 40(%rdi), %r8
+0x26b: 717e02000000000000   |     jle   rem6
+0x274: c0f00100000000000000 |     iaddq $1, %rax
+0x27e:                      | rem6:
+0x27e: 6288                 |     andq %r8, %r8
+0x280: 40862800000000000000 |     rmmovq %r8, 40(%rsi)
+0x28a: 50872000000000000000 |     mrmovq 32(%rdi), %r8
+0x294: 71a702000000000000   |     jle   rem5
+0x29d: c0f00100000000000000 |     iaddq $1, %rax
+0x2a7:                      | rem5:
+0x2a7: 6288                 |     andq %r8, %r8
+0x2a9: 40862000000000000000 |     rmmovq %r8, 32(%rsi)
+0x2b3: 50871800000000000000 |     mrmovq 24(%rdi), %r8
+0x2bd: 71d002000000000000   |     jle   rem4
+0x2c6: c0f00100000000000000 |     iaddq $1, %rax
+0x2d0:                      | rem4:
+0x2d0: 6288                 |     andq %r8, %r8
+0x2d2: 40861800000000000000 |     rmmovq %r8, 24(%rsi)
+0x2dc: 50871000000000000000 |     mrmovq 16(%rdi), %r8
+0x2e6: 71f902000000000000   |     jle   rem3
+0x2ef: c0f00100000000000000 |     iaddq $1, %rax
+0x2f9:                      | rem3:
+0x2f9: 6288                 |     andq %r8, %r8
+0x2fb: 40861000000000000000 |     rmmovq %r8, 16(%rsi)
+0x305: 50870800000000000000 |     mrmovq 8(%rdi), %r8
+0x30f: 712203000000000000   |     jle   rem2
+0x318: c0f00100000000000000 |     iaddq $1, %rax
+0x322:                      | rem2:
+0x322: 6288                 |     andq %r8, %r8
+0x324: 40860800000000000000 |     rmmovq %r8, 8(%rsi)
+0x32e: 50870000000000000000 |     mrmovq (%rdi), %r8
+0x338: 714b03000000000000   |     jle   rem1
+0x341: c0f00100000000000000 |     iaddq $1, %rax
+0x34b:                      | rem1:
+0x34b: 6288                 |     andq %r8, %r8
+0x34d: 40860000000000000000 |     rmmovq %r8, (%rsi)
+0x357: 716a03000000000000   |     jle   Done
+0x360: c0f00100000000000000 |     iaddq $1, %rax
+                            | 
                             | 
                             | ##################################################################
                             | # Do not modify the following section of code
                             | # Function epilogue.
-0x3b7:                      | Done:
-0x3b7: 90                   | 	ret
+0x36a:                      | Done:
+0x36a: 90                   | 	ret
                             | ##################################################################
                             | # Keep the following label at the end of your function
-0x3b8:                      | End:
+0x36b:                      | End:
                             | #/* $end ncopy-ys */
